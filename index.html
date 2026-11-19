@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f2a24" />
+    <title>Berlin Trash Clicker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game">
+      <header class="top">
+        <h1>Berlin Trash Clicker</h1>
+        <p class="tagline">Keep the Kiez clean, one piece at a time.</p>
+      </header>
+
+      <section class="stats" aria-label="Stats">
+        <div class="stat stat-money">
+          <span class="stat-label">Money</span>
+          <span class="stat-value" id="money">€0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Trash collected</span>
+          <span class="stat-value" id="trash">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Per tap</span>
+          <span class="stat-value" id="perTap">1</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Per second</span>
+          <span class="stat-value" id="perSecond">0</span>
+        </div>
+      </section>
+
+      <section class="street" aria-label="Street">
+        <div class="floaters" id="floaters" aria-hidden="true"></div>
+        <button class="tap" id="tapButton" type="button" aria-label="Pick up trash">
+          <span class="tap-emoji" aria-hidden="true">🗑️</span>
+          <span class="tap-label">Pick up trash</span>
+        </button>
+        <p class="tool">Using: <span id="tool">🥢 Trash Pick</span></p>
+      </section>
+
+      <section class="shop-wrap" aria-label="Upgrades">
+        <h2>Equipment &amp; Help</h2>
+        <div class="shop" id="shop"></div>
+      </section>
+
+      <footer class="bottom">
+        <span id="saveStatus">Progress saves automatically</span>
+        <button class="reset" id="resetButton" type="button">Reset</button>
+      </footer>
+    </main>
+
+    <!-- Load order matters: data contract → state → save → ui → main -->
+    <script src="js/upgrades.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
