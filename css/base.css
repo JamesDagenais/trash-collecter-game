@@ -1,13 +1,35 @@
+/* Base: palette, type, the one-screen layout and the HUD.
+ * Lo-fi look: muted dusk palette, chunky 2px ink outlines, hard (unblurred)
+ * shadows, a monospace "handmade" type stack and a little film grain. */
+
 :root {
-  --bg: #1f2a24;
-  --panel: #2a3830;
-  --panel-2: #33443a;
-  --text: #f1efe6;
-  --muted: #a9b3a5;
-  --accent: #ff8a00; /* street-cleaning orange */
-  --accent-dark: #c96a00;
-  --good: #8fd16a;
-  --radius: 14px;
+  --ink: #1d1626;
+  --bg: #231a2e;
+  --bg-2: #2c2139;
+  --panel: #33263f;
+  --panel-2: #432f4f;
+  --text: #f3e7cf;
+  --muted: #b5a6b6;
+  --accent: #ee7a22; /* BSR orange */
+  --accent-dark: #b4521c;
+  --mustard: #e2ac45;
+  --mustard-dark: #a87822;
+  --teal: #2f7d7a;
+  --teal-dark: #1f5458;
+  --plum: #6a4072;
+  --good: #9cc46a;
+  --kraft: #dcc69e;
+  --kraft-2: #cdb68b;
+  --kraft-dark: #a8916a;
+  --kraft-ink: #3b2b22;
+  --radius: 4px;
+  --font: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Roboto Mono', 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --hard: 0 3px 0 var(--ink);
+
+  /* sheet geometry (collapsed it shows the head + one shelf of cards) */
+  --sheet-head: 46px;
+  --shelf: 104px;
+  --peek: calc(var(--sheet-head) + var(--shelf) + env(safe-area-inset-bottom));
 }
 
 * {
@@ -17,166 +39,243 @@
 html,
 body {
   margin: 0;
-  background: var(--bg);
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
   color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
+
+button {
+  font-family: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Film grain over everything (an inline SVG noise tile, no network). */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- One-screen layout -------------------------------------------------- */
 
 .game {
+  position: relative;
   max-width: 560px;
+  height: 100vh;
+  height: 100dvh;
   margin: 0 auto;
-  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
-.top {
-  text-align: center;
-}
-.top h1 {
-  margin: 4px 0 0;
-  font-size: 1.6rem;
-  letter-spacing: 0.5px;
-}
-.tagline {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
+/* ---- HUD -------------------------------------------------------------- */
 
-/* Stats */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.hud {
+  flex: none;
+  position: relative;
+  z-index: 5;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 7px;
+  background: var(--bg);
+  border-bottom: 2px solid var(--ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-}
-.stat {
-  background: var(--panel);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
   min-width: 0;
 }
-.stat-money {
-  grid-column: 1 / -1;
+.hud-main {
+  margin-top: 6px;
+  align-items: flex-end;
+}
+
+/* the current zone, as a little Berlin street sign */
+.hud-zone {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 70%;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--text);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px #bfb39b, 0 2px 0 var(--ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  touch-action: manipulation;
 }
-.stat-money .stat-value {
+.hud-zone:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 1px #bfb39b;
+}
+.hud-zone-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-zone-pin {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7' shape-rendering='crispEdges'%3E%3Cpath fill='%231d1626' d='M2 0h3v1h1v3h-1v1h-1v2h-1v-2h-1v-1h-1v-3h1z'/%3E%3Cpath fill='%23ee7a22' d='M2 1h3v3h-1v1h-1v-1h-1z'/%3E%3Cpath fill='%23f3e7cf' d='M3 2h1v1h-1z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+.hud-zone-caret {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 4' shape-rendering='crispEdges'%3E%3Cpath fill='%231d1626' d='M0 1h4v1h-1v1h-2v-1h-1z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.hud-buttons {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.icon-btn {
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--panel-2) center / 16px 16px no-repeat;
+  box-shadow: 0 2px 0 var(--ink);
+  color: transparent;
+  font-size: 0; /* the text stays for screen readers; the icon is the background */
+  cursor: pointer;
+  image-rendering: pixelated;
+  touch-action: manipulation;
+}
+.icon-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.icon-btn:focus-visible,
+.hud-zone:focus-visible {
+  outline: 2px solid var(--mustard);
+  outline-offset: 2px;
+}
+.icon-btn.sound {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23f3e7cf' d='M0 3h2v-1h1v-1h1v6h-1v-1h-1v-1h-2z'/%3E%3Cpath fill='%23e2ac45' d='M5 3h1v2h-1zM6 1h1v1h-1zM7 2h1v4h-1zM6 6h1v1h-1z'/%3E%3C/svg%3E");
+}
+.icon-btn.sound[aria-pressed='true'] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23b5a6b6' d='M0 3h2v-1h1v-1h1v6h-1v-1h-1v-1h-2z'/%3E%3Cpath fill='%23c4473a' d='M5 2h1v1h1v-1h1v1h-1v1h1v1h-1v-1h-1v1h-1v-1h1v-1h-1z'/%3E%3C/svg%3E");
+}
+.icon-btn.reset {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23f3e7cf' d='M2 1h4v1h1v1h-1v-1h-4v1h-1v3h1v1h4v-1h1v1h-1v1h-4v-1h-1v-1h-1v-3h1v-1h1z'/%3E%3Cpath fill='%23ee7a22' d='M5 3h3v-3h-1v2h-2z'/%3E%3C/svg%3E");
+}
+
+.money {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.money-value {
+  display: block;
   font-size: 2rem;
-  color: var(--good);
-}
-.stat-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--muted);
-}
-.stat-value {
-  font-size: 1.15rem;
-  font-weight: 700;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mustard);
+  text-shadow: 2px 2px 0 var(--ink), 3px 3px 0 var(--accent-dark);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Tap area */
-.street {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-}
-.tap {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  border: 6px solid var(--accent-dark);
-  background: radial-gradient(circle at 35% 30%, #ffb04d, var(--accent));
-  color: #2b1600;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.rates {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
   gap: 4px;
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  box-shadow: 0 8px 0 var(--accent-dark), 0 14px 30px rgba(0, 0, 0, 0.35);
-  transition: transform 60ms ease, box-shadow 60ms ease;
-}
-.tap:active {
-  transform: translateY(6px);
-  box-shadow: 0 2px 0 var(--accent-dark), 0 6px 16px rgba(0, 0, 0, 0.35);
-}
-.tap:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 6px;
-}
-.tap-emoji {
-  font-size: 4.5rem;
-  line-height: 1;
-}
-.tap-label {
-  font-weight: 800;
-  font-size: 1rem;
-}
-.tool {
   margin: 0;
+}
+.rate {
+  min-width: 52px;
+  padding: 2px 6px 3px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--panel);
+  text-align: right;
+}
+.rate dt {
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  font-size: 0.9rem;
+  white-space: nowrap;
 }
-.tool span {
-  color: var(--text);
-}
-
-.zone-label {
+.rate dd {
   margin: 0;
-  font-weight: 700;
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rate:nth-child(2) dd {
   color: var(--accent);
 }
-
-/* Footer */
-.bottom {
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-.footer-buttons {
-  display: flex;
-  gap: 8px;
-}
-.footer-btn {
-  background: none;
-  border: 1px solid var(--muted);
-  color: var(--muted);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font: inherit;
-  cursor: pointer;
-}
-.footer-btn:hover {
-  color: var(--text);
-  border-color: var(--text);
+.rate:nth-child(3) dd {
+  color: var(--good);
 }
 
+/* Narrow phones: a bit tighter */
 @media (max-width: 380px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
+  .money-value {
+    font-size: 1.7rem;
   }
-  .stats .stat:nth-child(4) {
-    grid-column: 1 / -1;
+  .rate {
+    min-width: 46px;
+    padding: 2px 4px 3px;
   }
-  .tap {
-    width: 170px;
-    height: 170px;
+  .rate dd {
+    font-size: 0.8rem;
+  }
+}
+
+/* Short screens (small Androids): a smaller shelf */
+@media (max-height: 700px) {
+  :root {
+    --sheet-head: 42px;
+    --shelf: 94px;
+  }
+  .hud {
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: 5px;
+  }
+  .hud-main {
+    margin-top: 4px;
   }
 }

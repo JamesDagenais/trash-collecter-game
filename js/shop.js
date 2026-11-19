@@ -6,7 +6,9 @@
  *   TrashGame.Shop.render(state)   // called EVERY animation frame, so it must be cheap
  *
  * DOM HOOKS (used by browser tests):
- *   each upgrade's buy button has  data-id="<upgradeId>"  and is `disabled` when unaffordable
+ *   each upgrade's buy button has  data-id="<upgradeId>"  and is aria-disabled="true" when unaffordable
+ *   (aria-disabled, not `disabled`: the button keeps focus after buying the last
+ *   affordable copy, and unaffordable items stay reachable by keyboard / screen reader)
  *   each zone's button has          data-zone="<zoneId>"
  *
  * Read state only through TrashGame.State and data through TrashGame.UPGRADES /
@@ -26,6 +28,14 @@
  *   Effects shown on a row are the real gain of buying one more copy: State is
  *   asked for trashPerTap / trashPerSecond on a copy of the state with one more
  *   owned. This includes the zone multiplier and survives economy changes.
+ *
+ *   Lo-fi look: icons are 16x16 pixel art from TrashGame.Pixel.icon (hand-drawn
+ *   for known ids, a pixelated emoji otherwise) and zone cards show a tiny pixel
+ *   backdrop from TrashGame.Character.zoneThumb. Both are optional.
+ *
+ *   Bottom sheet: the same buttons are laid out as a horizontal "shelf" while the
+ *   sheet is collapsed (CSS, keyed on html.sheet-open). The shelf keeps the most
+ *   useful card in view: the priciest affordable upgrade, else the next goal.
  *
  *   Double-buy guard: only `click` is used (one per tap), held-key repeats are
  *   ignored, and a second trusted click on the same button before the next
@@ -49,6 +59,9 @@
   let rows = [];
   let teaser = null;
   let lastFxKey = null;
+
+  let focusRow = null;
+  let refocus = true;
 
   let track = null;
   let chips = [];
@@ -109,6 +122,25 @@
     });
   }
 
+  /** Shows a pixel icon as the background of `node`; falls back to the emoji text. */
+  function setIcon(node, key, emoji) {
+    const P = TrashGame.Pixel;
+    const url = P ? P.icon(key, emoji) : '';
+    if (url) {
+      node.style.backgroundImage = 'url(' + url + ')';
+      node.classList.add('pixel');
+      setText(node, '');
+    } else {
+      node.style.backgroundImage = '';
+      node.classList.remove('pixel');
+      setText(node, emoji || '');
+    }
+  }
+
+  function sheetOpen() {
+    return document.documentElement.classList.contains('sheet-open');
+  }
+
   function restartAnimation(node, className) {
     node.classList.remove(className);
     void node.offsetWidth; // reflow so the animation plays again
@@ -121,11 +153,12 @@
     const button = el('button', 'upgrade hidden');
     button.type = 'button';
     button.dataset.id = u.id;
-    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
 
     const iconWrap = el('span', 'upgrade-icon');
     iconWrap.setAttribute('aria-hidden', 'true');
-    const icon = el('span', 'upgrade-emoji', u.icon);
+    const icon = el('span', 'upgrade-emoji');
+    setIcon(icon, u.id, u.icon);
     const count = el('span', 'upgrade-count');
     iconWrap.append(icon, count);
 
@@ -248,6 +281,8 @@
     const earned = state.totalMoneyEarned || 0;
     let previousOwned = true;
     let firstHidden = null;
+    let bestAffordable = null;
+    let nextGoal = null;
 
     for (const r of rows) {
       const u = r.u;
@@ -269,7 +304,7 @@
       }
       if (c.affordable !== affordable) {
         c.affordable = affordable;
-        r.button.disabled = !affordable;
+        setAttr(r.button, 'aria-disabled', affordable ? null : 'true');
         r.button.classList.toggle('affordable', affordable);
       }
       if (c.cost !== cost) {
@@ -291,10 +326,35 @@
           `Buy ${u.name} for ${F().money(cost)}. Owned: ${F().number(owned)}.` + (r.fxText ? ` Gives ${r.fxText}.` : '')
         );
       }
-      if (visible) setProgress(r.fill, c, affordable ? 1 : money / cost);
+      if (visible) {
+        setProgress(r.fill, c, affordable ? 1 : money / cost);
+        if (affordable) bestAffordable = r;
+        else if (!nextGoal) nextGoal = r;
+      }
     }
 
     renderTeaser(state, firstHidden);
+    focusShelf(bestAffordable || nextGoal);
+  }
+
+  /** Scrolls the collapsed shelf so `row` is in view (only when the focus changes). */
+  function focusShelf(row) {
+    if (row === focusRow && !refocus) return;
+    focusRow = row;
+    refocus = false;
+    if (!row || sheetOpen() || !list) return;
+    const view = list.clientWidth;
+    if (!view || list.scrollWidth <= view) return;
+    const b = row.button;
+    const left = b.offsetLeft - list.offsetLeft;
+    const right = left + b.offsetWidth;
+    let target = list.scrollLeft;
+    if (right + 24 > target + view) target = right + 24 - view;
+    if (left - 12 < target) target = left - 12;
+    target = Math.max(0, Math.min(target, list.scrollWidth - view));
+    if (Math.abs(target - list.scrollLeft) < 1) return;
+    if (list.scrollTo) list.scrollTo({ left: target, behavior: 'smooth' });
+    else list.scrollLeft = target;
   }
 
   function renderTeaser(state, target) {
@@ -303,7 +363,7 @@
       teaser.root.classList.toggle('hidden', !target);
       if (target) {
         list.insertBefore(teaser.root, target.button);
-        setText(teaser.icon, target.u.icon);
+        setIcon(teaser.icon, target.u.id, target.u.icon);
         const at = S().upgradeCost(target.u, 0) * REVEAL_FRACTION;
         teaser.threshold = at;
         setText(teaser.desc, `Something new turns up at ${F().money(at)} earned.`);
@@ -316,7 +376,7 @@
 
   function perkText(z) {
     const parts = ['×' + F().number(z.trashMultiplier, 2) + ' trash'];
-    if (z.pfandChance > 0) parts.push('🍾 ' + percent(z.pfandChance));
+    if (z.pfandChance > 0) parts.push('Pfand ' + percent(z.pfandChance));
     return parts.join(' · ');
   }
 
@@ -335,7 +395,16 @@
     top.setAttribute('aria-hidden', 'true');
     const icon = el('span', 'zone-icon');
     const tag = el('span', 'zone-tag');
-    top.append(icon, tag);
+    const thumb = el('span', 'zone-thumb');
+    thumb.setAttribute('aria-hidden', 'true');
+    try {
+      const url = TrashGame.Character && TrashGame.Character.zoneThumb(z.id, 56, 30);
+      if (url) thumb.style.backgroundImage = 'url(' + url + ')';
+    } catch (e) {
+      /* no picture, no problem */
+    }
+    thumb.append(tag);
+    top.append(icon);
     const name = el('span', 'zone-name');
     name.setAttribute('aria-hidden', 'true');
     const perk = el('span', 'zone-perk');
@@ -344,7 +413,7 @@
     bar.setAttribute('aria-hidden', 'true');
     const fill = el('span', 'zone-fill');
     bar.append(fill);
-    button.append(top, name, perk, bar);
+    button.append(thumb, top, name, perk, bar);
 
     const chip = { z, button, icon, tag, name, perk, fill, mode: null, affordable: null, cache: { progress: null } };
     guarded(button, () => {
@@ -363,27 +432,24 @@
     for (const m of ['current', 'unlocked', 'next', 'locked']) button.classList.toggle('is-' + m, m === mode);
     button.classList.toggle('current', mode === 'current'); // legacy hook from the starter shop
     const known = mode !== 'locked';
-    setText(chip.icon, known ? z.icon : '🔒');
+    setText(chip.icon, known ? z.icon : '');
     setText(chip.name, known ? z.name : '???');
     setText(chip.perk, known ? perkText(z) : 'Unlock earlier zones');
     if (z.description && known) setAttr(button, 'title', z.description);
     else setAttr(button, 'title', null);
 
     setAttr(button, 'aria-current', mode === 'current' ? 'true' : null);
-    setAttr(button, 'aria-disabled', mode === 'current' ? 'true' : null);
+    setAttr(button, 'aria-disabled', mode === 'current' || mode === 'locked' || mode === 'next' ? 'true' : null);
     if (mode === 'current') {
-      button.disabled = false;
-      setText(chip.tag, '📍 Here');
+      setText(chip.tag, 'Here');
       setAttr(button, 'aria-label', `${z.name}, you are here. ${perkLabel(z)}.`);
     } else if (mode === 'unlocked') {
-      button.disabled = false;
-      setText(chip.tag, 'Go →');
+      setText(chip.tag, 'Go');
       setAttr(button, 'aria-label', `Travel to ${z.name}. ${perkLabel(z)}.`);
     } else if (mode === 'next') {
-      setText(chip.tag, '🔒 ' + F().money(z.unlockCost));
+      setText(chip.tag, F().money(z.unlockCost));
       setAttr(button, 'aria-label', `Unlock ${z.name} for ${F().money(z.unlockCost)}. ${perkLabel(z)}.`);
     } else {
-      button.disabled = true;
       setText(chip.tag, '');
       setAttr(button, 'aria-label', 'Locked zone. Unlock the zones before it first.');
     }
@@ -431,9 +497,9 @@
         const affordable = S().canUnlockZone(state, z.id);
         if (chip.affordable !== affordable) {
           chip.affordable = affordable;
-          chip.button.disabled = !affordable;
+          setAttr(chip.button, 'aria-disabled', affordable ? null : 'true');
           chip.button.classList.toggle('affordable', affordable);
-          setText(chip.tag, (affordable ? '🔓 ' : '🔒 ') + F().money(z.unlockCost));
+          setText(chip.tag, F().money(z.unlockCost));
         }
         setProgress(chip.fill, chip.cache, affordable ? 1 : state.money / z.unlockCost);
       }
@@ -465,7 +531,19 @@
     zonesRendered = false;
     for (const c of chips) track.appendChild(c.button);
     zonesEl.appendChild(track);
+
+    focusRow = null;
+    refocus = true;
+    if (!listening) {
+      listening = true;
+      root.addEventListener('trashgame:sheet', () => {
+        refocus = true;
+        zonesRendered = false;
+        for (const c of chips) c.mode = null; // re-run the chip scroll for the new layout
+      });
+    }
   }
+  let listening = false;
 
   function render(state) {
     if (!list) return;

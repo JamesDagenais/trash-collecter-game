@@ -3,74 +3,101 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#1f2a24" />
+    <meta name="theme-color" content="#231a2e" />
     <title>Berlin Trash Clicker</title>
     <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/character.css" />
     <link rel="stylesheet" href="css/shop.css" />
     <link rel="stylesheet" href="css/effects.css" />
   </head>
   <body>
-    <main class="game">
-      <header class="top">
-        <h1>Berlin Trash Clicker</h1>
-        <p class="tagline">Keep the Kiez clean, one piece at a time.</p>
+    <main class="game" id="game">
+      <h1 class="sr-only">Berlin Trash Clicker</h1>
+
+      <!-- HUD: money, the three rates, where you are, sound + reset -->
+      <header class="hud" aria-label="Stats">
+        <div class="hud-row">
+          <button class="hud-zone" id="zoneButton" type="button" aria-label="Change zone">
+            <span class="hud-zone-pin" aria-hidden="true"></span>
+            <span class="hud-zone-name" id="zoneName"></span>
+            <span class="hud-zone-caret" aria-hidden="true"></span>
+          </button>
+          <span class="hud-buttons">
+            <button class="icon-btn sound" id="soundToggle" type="button">Sound</button>
+            <button class="icon-btn reset" id="resetButton" type="button" aria-label="Reset progress" title="Reset progress">Reset</button>
+          </span>
+        </div>
+        <div class="hud-row hud-main">
+          <div class="money">
+            <span class="sr-only">Money</span>
+            <span class="money-value" id="money">€0</span>
+          </div>
+          <dl class="rates">
+            <div class="rate">
+              <dt>Trash</dt>
+              <dd id="trash">0</dd>
+            </div>
+            <div class="rate">
+              <dt>Per tap</dt>
+              <dd id="perTap">1</dd>
+            </div>
+            <div class="rate">
+              <dt>Per sec</dt>
+              <dd id="perSecond">0</dd>
+            </div>
+          </dl>
+        </div>
       </header>
 
-      <section class="stats" aria-label="Stats">
-        <div class="stat stat-money">
-          <span class="stat-label">Money</span>
-          <span class="stat-value" id="money">€0</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Trash collected</span>
-          <span class="stat-value" id="trash">0</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Per tap</span>
-          <span class="stat-value" id="perTap">1</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Per second</span>
-          <span class="stat-value" id="perSecond">0</span>
-        </div>
-      </section>
-
-      <section class="street" aria-label="Street">
-        <p class="zone-label" id="zoneName"></p>
-        <div class="floaters" id="floaters" aria-hidden="true"></div>
-        <button class="tap" id="tapButton" type="button" aria-label="Pick up trash">
-          <span class="tap-emoji" aria-hidden="true">🗑️</span>
-          <span class="tap-label">Pick up trash</span>
+      <!-- The street: the whole picture is the tap target -->
+      <section class="stage" id="stage" aria-label="Street">
+        <button class="tap" id="tapButton" type="button" aria-label="Pick up trash" aria-describedby="tool">
+          <canvas class="scene" id="scene" aria-hidden="true"></canvas>
         </button>
-        <p class="tool">Using: <span id="tool">🥢 Trash Pick</span></p>
+        <div class="floaters" id="floaters" aria-hidden="true"></div>
+        <p class="tool-tag"><span class="tool-tag-icon" id="toolIcon" aria-hidden="true"></span><span id="tool">Trash Pick</span></p>
+        <p class="tap-hint" id="tapHint" aria-hidden="true">tap him!</p>
       </section>
 
-      <!-- Shop UI workstream owns everything rendered inside #zones and #shop -->
-      <section class="zones-wrap" aria-label="Zones">
-        <h2>Zones</h2>
-        <div class="zones" id="zones"></div>
+      <!-- Pull-up sheet: equipment + zones. Collapsed it is a quick-buy shelf. -->
+      <section class="sheet" id="sheet" aria-label="Shop">
+        <div class="sheet-head" id="sheetHead">
+          <span class="sheet-grip" aria-hidden="true"></span>
+          <div class="sheet-tabs" role="tablist" aria-label="Shop sections">
+            <button class="sheet-tab" id="tabShop" type="button" role="tab" aria-selected="true" aria-controls="paneShop">
+              <span class="sheet-tab-icon gear" aria-hidden="true"></span>Gear &amp; Help
+            </button>
+            <button class="sheet-tab" id="tabZones" type="button" role="tab" aria-selected="false" aria-controls="paneZones" tabindex="-1">
+              <span class="sheet-tab-icon map" aria-hidden="true"></span>Zones
+            </button>
+          </div>
+          <button class="sheet-toggle" id="sheetToggle" type="button" aria-expanded="false" aria-controls="sheetBody" aria-label="Open shop">
+            <span class="sheet-toggle-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="sheet-body" id="sheetBody">
+          <!-- Shop UI renders everything inside #shop and #zones -->
+          <div class="pane" id="paneShop" role="tabpanel" aria-labelledby="tabShop">
+            <div class="shop" id="shop"></div>
+          </div>
+          <div class="pane" id="paneZones" role="tabpanel" aria-labelledby="tabZones" hidden>
+            <div class="zones" id="zones"></div>
+          </div>
+          <p class="save-status" id="saveStatus">Progress saves automatically</p>
+        </div>
       </section>
-
-      <section class="shop-wrap" aria-label="Upgrades">
-        <h2>Equipment &amp; Help</h2>
-        <div class="shop" id="shop"></div>
-      </section>
-
-      <footer class="bottom">
-        <span id="saveStatus">Progress saves automatically</span>
-        <span class="footer-buttons">
-          <button class="footer-btn" id="soundToggle" type="button">🔊 Sound</button>
-          <button class="footer-btn reset" id="resetButton" type="button">Reset</button>
-        </span>
-      </footer>
+      <div class="sheet-scrim" id="sheetScrim" aria-hidden="true"></div>
     </main>
 
-    <!-- Load order: data → logic → save → shared helpers → UI modules → main -->
+    <!-- Load order: data → logic → save → shared helpers → art → UI modules → main -->
     <script src="js/upgrades.js"></script>
     <script src="js/zones.js"></script>
     <script src="js/state.js"></script>
     <script src="js/save.js"></script>
     <script src="js/format.js"></script>
+    <script src="js/sprites.js"></script>
+    <script src="js/character.js"></script>
+    <script src="js/sheet.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/shop.js"></script>
     <script src="js/audio.js"></script>
