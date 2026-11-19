@@ -64,7 +64,7 @@
       description: 'Flea market, karaoke and a thousand empty bottles. Pfand paradise if you keep tapping.',
       icon: '🎤',
       unlockCost: 2500000,
-      trashMultiplier: 3.5,
+      trashMultiplier: 3.8,
       pfandChance: 0.06,
     },
     {
@@ -82,7 +82,7 @@
       description: 'Friday night on the bridge left bottles everywhere. Pfand paradise if you keep tapping.',
       icon: '🌉',
       unlockCost: 800000000,
-      trashMultiplier: 6.5,
+      trashMultiplier: 7,
       pfandChance: 0.06,
     },
     {
@@ -90,7 +90,7 @@
       name: 'Alexanderplatz',
       description: 'Under the Fernsehturm the whole city passes through. So does its trash.',
       icon: '🗼',
-      unlockCost: 10000000000,
+      unlockCost: 6000000000,
       trashMultiplier: 12,
       pfandChance: 0.02,
     },

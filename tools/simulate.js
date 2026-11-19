@@ -223,12 +223,28 @@ function report(r) {
 }
 
 if (require.main === module) {
-  const args = Object.fromEntries(
-    process.argv.slice(2).map((a) => {
-      const [k, v] = a.replace(/^--/, '').split('=');
-      return [k, v === undefined ? true : v];
-    }),
-  );
+  // Accepts --tps=8 and --tps 8. Flags (--all, --json) take no value.
+  const FLAGS = new Set(['all', 'json']);
+  const VALUES = new Set(['tps', 'minutes', 'seed']);
+  const args = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    const m = /^--([a-z]+)(?:=(.*))?$/.exec(argv[i]);
+    const key = m && m[1];
+    if (!m || !(FLAGS.has(key) || VALUES.has(key))) {
+      console.error(`Unknown argument "${argv[i]}". Use --tps N, --minutes N, --seed N, --all, --json.`);
+      process.exit(2);
+    }
+    if (FLAGS.has(key)) args[key] = true;
+    else {
+      const v = m[2] !== undefined ? m[2] : argv[++i];
+      if (v === undefined || !Number.isFinite(Number(v))) {
+        console.error(`--${key} needs a number`);
+        process.exit(2);
+      }
+      args[key] = v;
+    }
+  }
   const r = simulate({
     tps: args.tps !== undefined ? Number(args.tps) : 4,
     minutes: Number(args.minutes || 120),

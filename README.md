@@ -59,5 +59,8 @@ Scripts load with plain `<script>` tags in the order shown in `index.html` and s
 ```
 
 - **Saving:** the game saves to `localStorage["berlinTrashClicker.save"]` as `{ version, state }` (currently version 2). It saves every 10 s, after each purchase, and when the tab is hidden or closed.
-- **Loading:** saved data is merged onto a fresh state. Invalid values are ignored, removed upgrades are dropped, and new upgrades start at 0. `Save.migrate` upgrades older saves; v1 → v2 refunds the removed Heavy-Duty Gloves and Leaf Blower and the old Warschauer Straße unlock.
+- **Loading:** saved data is merged onto a fresh state. Invalid values are ignored, removed upgrades are dropped, and new upgrades start at 0. `Save.migrate` upgrades older saves; v1 → v2 refunds every v1 purchase at v1 prices and resets upgrades and zones, because almost every upgrade changed price and effect.
+- **Multiple tabs:** each save carries a `saveRev`. A tab never overwrites a newer save. It switches to the newer progress instead (on the `storage` event, or when its own save is refused). Reset writes a fresh game over the old save, so an old tab can't bring the old game back.
+- **Backups:** a corrupt save, or one from an unknown newer version, is copied to `berlinTrashClicker.save.backup` before anything overwrites it.
+- **Away progress:** when you return (page load, or the tab becoming visible after 10 s or more), `State.awayProgress` credits 50% of passive income for up to 2 h.
 - **Settings:** the mute preference is stored separately in `localStorage["berlinTrashClicker.settings"]`.

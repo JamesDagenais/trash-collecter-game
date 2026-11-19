@@ -15,6 +15,9 @@
  *        trash: trash picked up; money: € earned from that trash;
  *        pfand: bonus € from a Pfand bottle on this tap (0 if none)
  *   tick(state, dtSeconds)        -> trash collected passively
+ *   awayProgress(state, seconds)  -> { seconds, trash, money } credited for time
+ *        away (tab hidden / game closed): OFFLINE_RATE of passive income,
+ *        capped at OFFLINE_MAX_SECONDS. Taps and Pfand don't happen while away.
  *   pfandValue(state)             -> € a bottle is worth right now:
  *        PFAND_TAPS_WORTH taps of money + PFAND_SECONDS_WORTH seconds of
  *        passive income, both in the current zone
@@ -33,6 +36,7 @@
  *   zonesUnlocked: { [zoneId]: true }
  *   pfandBottles, pfandMoney                     numbers (lifetime)
  *   startedAt, lastSaved                         ms timestamps
+ *   saveRev                                      save revision (see save.js)
  */
 (function (root) {
   'use strict';
@@ -48,6 +52,11 @@
     // is passive. See docs/economy.md.
     PFAND_TAPS_WORTH: 8,
     PFAND_SECONDS_WORTH: 2,
+    // Away progress: passive helpers keep working at half speed while you're
+    // gone, for at most 2 hours.
+    OFFLINE_RATE: 0.5,
+    OFFLINE_MAX_SECONDS: 2 * 60 * 60,
+    MAX_OWNED: 1e6, // per upgrade; keeps counts far from float-precision trouble
   });
 
   function createState() {
@@ -66,6 +75,7 @@
       pfandMoney: 0,
       startedAt: Date.now(),
       lastSaved: null,
+      saveRev: 0,
     };
   }
 
@@ -99,6 +109,7 @@
 
   function buy(state, id) {
     if (!getUpgrade(id)) return false;
+    if (owned(state, id) >= TrashGame.CONFIG.MAX_OWNED) return false;
     const cost = nextCost(state, id);
     if (state.money < cost) return false;
     state.money -= cost;
@@ -205,6 +216,13 @@
     return trash;
   }
 
+  function awayProgress(state, seconds) {
+    const capped = Math.min(Number.isFinite(seconds) && seconds > 0 ? seconds : 0, TrashGame.CONFIG.OFFLINE_MAX_SECONDS);
+    const trash = trashPerSecond(state) * capped * TrashGame.CONFIG.OFFLINE_RATE;
+    const money = collect(state, trash);
+    return { seconds: capped, trash: money > 0 ? trash : 0, money };
+  }
+
   TrashGame.State = {
     createState,
     getUpgrade,
@@ -227,5 +245,6 @@
     collect,
     tap,
     tick,
+    awayProgress,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

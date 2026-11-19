@@ -18,6 +18,8 @@ const { pathToFileURL } = require('url');
 let chromium;
 try {
   ({ chromium } = require('playwright'));
+
+// A buy button is 'disabled' via the disabled attribute or aria-disabled="true" (keeps focus reachable).
 } catch (e) {
   console.error('Playwright is not available: ' + e.message);
   process.exit(1);
@@ -102,7 +104,7 @@ async function main() {
     await step('first upgrade is disabled while broke', async () => {
       if ((await read('#money')) >= first.cost) throw new Error(`already have ${await read('#money')} >= ${first.cost}; cannot test "broke"`);
       await page.waitForTimeout(100); // let a few render frames run
-      if (!(await btn().isDisabled())) throw new Error(`[data-id="${first.id}"] should be disabled`);
+      if (!(await btn().evaluate((el) => el.disabled || el.getAttribute('aria-disabled') === 'true'))) throw new Error(`[data-id="${first.id}"] should be disabled`);
     });
 
     await step('tapping increases money and trash', async () => {
@@ -116,7 +118,7 @@ async function main() {
     await step('first upgrade becomes enabled after enough taps', async () => {
       for (let i = 0; i < 5000 && (await read('#money')) < first.cost; i++) await tap();
       if ((await read('#money')) < first.cost) throw new Error(`could not tap up to ${first.cost}`);
-      await waitFor((id) => !document.querySelector(`[data-id="${id}"]`).disabled, first.id, `[data-id="${first.id}"] to be enabled`);
+      await waitFor((id) => { const el = document.querySelector(`[data-id="${id}"]`); return !(el.disabled || el.getAttribute('aria-disabled') === 'true'); }, first.id, `[data-id="${first.id}"] to be enabled`);
     });
 
     await step('buying it spends money and raises per-tap', async () => {
@@ -155,7 +157,7 @@ async function main() {
       await page.reload();
       await waitFor((v) => parseFloat(document.getElementById('perTap').textContent.replace(/[^\d.]/g, '')) === v, perTapBefore, 'per-tap still fresh after reload');
       if ((await read('#money')) !== 0) throw new Error('money came back after reload');
-      await waitFor((id) => document.querySelector(`[data-id="${id}"]`).disabled, first.id, 'first upgrade disabled again');
+      await waitFor((id) => { const el = document.querySelector(`[data-id="${id}"]`); return el.disabled || el.getAttribute('aria-disabled') === 'true'; }, first.id, 'first upgrade disabled again');
     });
 
     await step('Reset with confirm dismissed keeps progress', async () => {

@@ -201,17 +201,16 @@ test('state.zone always ends up a real, unlocked zone', (T) => {
   }
 });
 
-test('a Phase 1 save (no zone or Pfand fields) loads fine', (T) => {
+test('a Phase 1 save (no zone or Pfand fields) loads fine, with v1 purchases refunded', (T) => {
   const store = memoryStore();
-  const id0 = T.UPGRADES[0].id;
-  const phase1 = { trash: 500, money: 120.5, totalMoneyEarned: 600, taps: 480, upgrades: { [id0]: 3 }, startedAt: 1700000000000, lastSaved: 1700000100000 };
+  const phase1 = { trash: 500, money: 120.5, totalMoneyEarned: 600, taps: 480, upgrades: { broom: 3 }, startedAt: 1700000000000, lastSaved: 1700000100000 };
   writeRaw(T, store, phase1, 1);
   const s = T.Save.load(store);
   assert.strictEqual(s.trash, 500);
-  assert.strictEqual(s.money, 120.5);
+  assert.strictEqual(s.money, 120.5 + 15 + 18 + 20); // 3 v1 brooms at 15 x 1.15^n, rounded up
   assert.strictEqual(s.totalMoneyEarned, 600);
   assert.strictEqual(s.taps, 480);
-  assert.strictEqual(s.upgrades[id0], 3);
+  for (const u of T.UPGRADES) assert.strictEqual(s.upgrades[u.id], 0, `${u.id} reset by the v1 migration`);
   assert.strictEqual(s.startedAt, 1700000000000);
   assert.strictEqual(s.zone, T.ZONES[0].id);
   assert.deepStrictEqual(s.zonesUnlocked, { [T.ZONES[0].id]: true });

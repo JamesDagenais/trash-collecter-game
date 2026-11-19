@@ -42,3 +42,15 @@ Tap in the Pfand-rich zone, and go idle in the one before it. Pfand is about 32%
 ## Save compatibility
 
 `SAVE_VERSION` is now 2. The Heavy-Duty Gloves (`work_gloves`) and the Leaf Blower (`leaf_blower`) are gone because they broke the tool ladder. Warschauer Straße moved from zone 2 (€5,000) to zone 6. When a v1 save is loaded, `Save.migrate` refunds what the player paid at v1 prices. Every other id kept its count. Two display names changed: `garbage_bags` is now Bin Bags and `handcart` is now Push Cart. `sweeper_truck` is now a tap tool.
+
+## Phase 3 review adjustments
+
+An independent review measured the economy against three player models: the greedy simulator bot, a "moderate" player who buys new things right away and only repeat copies that pay back within 2 minutes, and a "spend-all" player.
+
+- **Read simulator times as a lower bound.** `tools/simulate.js` is a near-optimal planner: it waits for the best-value buy and teleports to the best zone after every purchase. Realistic players take about 1.4× (moderate) to more than 3× (spend-all) as long.
+- **Retuned:**
+  - Mauerpark ×3.5 → **×3.8** and Warschauer Straße ×6.5 → **×7**. Pfand-rich zones now cost an idle player only about 5% (it was 13%), and still win clearly at 4 taps/s.
+  - Recycling Yard €1.2B → **€1B**, Orange Fleet €4B → **€3B**, Alexanderplatz €10B → **€6B**. This shortens the late-game waits.
+- **Result (greedy bot):** everything is bought at 40:08 at 4 taps/s (was 46:00), 54:10 at 2 taps/s and 1h05 at 0.5 taps/s.
+- **Away progress:** while the tab is hidden or the game is closed, passive income keeps running at `OFFLINE_RATE` (50%) for up to `OFFLINE_MAX_SECONDS` (2 h).
+- **Open question:** the late game is mostly passive income. The review suggests a late tap tool (about €2B, +250,000 per tap) between Recycling Yard and Orange Fleet. That raises the moderate player's lifetime tap share from 15% to about 39% at 4 taps/s.
