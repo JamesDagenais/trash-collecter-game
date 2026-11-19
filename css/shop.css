@@ -1,0 +1,83 @@
+/* Shop UI: upgrade panel + zones panel. Owned by the Shop UI workstream. */
+
+.shop-wrap h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+.shop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.upgrade {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, opacity 120ms;
+}
+.upgrade.hidden {
+  display: none;
+}
+.upgrade:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.upgrade.affordable {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+.upgrade.affordable:hover {
+  background: #3d5145;
+}
+.upgrade.affordable:active {
+  transform: scale(0.99);
+}
+.upgrade-icon {
+  font-size: 2rem;
+  width: 2.4rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+.upgrade-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.upgrade-name {
+  font-weight: 700;
+}
+.upgrade-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.upgrade-effect {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.upgrade-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.upgrade-cost {
+  font-weight: 700;
+  color: var(--good);
+  font-variant-numeric: tabular-nums;
+}
+.upgrade-owned {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+

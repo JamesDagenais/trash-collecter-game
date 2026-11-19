@@ -1,0 +1,33 @@
+/* Juice: floaters, tap animations. Owned by the Juice workstream. */
+
+.floaters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+.floater {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: var(--good);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  animation: float-up 800ms ease-out forwards;
+}
+@keyframes float-up {
+  to {
+    transform: translate(-50%, -140%);
+    opacity: 0;
+  }
+}
+
+.tap.bump .tap-emoji {
+  animation: bump 140ms ease-out;
+}
+@keyframes bump {
+  50% {
+    transform: scale(1.15) rotate(-6deg);
+  }
+}

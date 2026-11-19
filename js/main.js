@@ -1,9 +1,11 @@
 /*
  * Bootstrap: load the save, wire input to state, run the loop, autosave.
+ * This is the only file that changes state in response to input.
  */
 (function () {
   'use strict';
-  const { State, Save, UI } = window.TrashGame;
+  const { State, Save, UI, Shop, Effects, Sound } = window.TrashGame;
+  const $ = (id) => document.getElementById(id);
 
   const AUTOSAVE_MS = 10000;
   const MAX_FRAME_SECONDS = 1; // don't award a huge chunk after a frozen tab
@@ -18,11 +20,7 @@
 
   UI.init({
     onTap(event) {
-      const gained = State.tap(state);
-      UI.spawnFloater(gained, event);
-    },
-    onBuy(id) {
-      if (State.buy(state, id)) persist();
+      Effects.tap(State.tap(state), event);
     },
     onReset() {
       if (!confirm('Reset all progress? This cannot be undone.')) return;
@@ -32,11 +30,38 @@
     },
   });
 
+  Shop.init({
+    shopEl: $('shop'),
+    zonesEl: $('zones'),
+    onBuy(id) {
+      if (State.buy(state, id)) {
+        Effects.purchase(State.getUpgrade(id));
+        persist();
+      }
+    },
+    onUnlockZone(id) {
+      if (State.unlockZone(state, id)) {
+        Effects.zoneUnlocked(State.getZone(id));
+        persist();
+      }
+    },
+    onTravel(id) {
+      if (State.travelTo(state, id)) {
+        Effects.travel(State.getZone(id));
+        persist();
+      }
+    },
+  });
+
+  Effects.init({ tapButton: $('tapButton'), floatersEl: $('floaters') });
+  Sound.init({ toggleButton: $('soundToggle') });
+
   function frame(now) {
     const dt = Math.min((now - lastFrame) / 1000, MAX_FRAME_SECONDS);
     lastFrame = now;
     State.tick(state, dt);
     UI.render(state);
+    Shop.render(state);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

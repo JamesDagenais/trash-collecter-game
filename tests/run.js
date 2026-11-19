@@ -6,7 +6,7 @@
 const assert = require('assert');
 const path = require('path');
 
-for (const f of ['upgrades.js', 'state.js', 'save.js']) {
+for (const f of ['upgrades.js', 'zones.js', 'state.js', 'save.js']) {
   require(path.join(__dirname, '..', 'js', f));
 }
 const { UPGRADES, State, Save, CONFIG } = globalThis.TrashGame;

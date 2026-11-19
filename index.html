@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#1f2a24" />
     <title>Berlin Trash Clicker</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/shop.css" />
+    <link rel="stylesheet" href="css/effects.css" />
   </head>
   <body>
     <main class="game">
@@ -34,12 +36,19 @@
       </section>
 
       <section class="street" aria-label="Street">
+        <p class="zone-label" id="zoneName"></p>
         <div class="floaters" id="floaters" aria-hidden="true"></div>
         <button class="tap" id="tapButton" type="button" aria-label="Pick up trash">
           <span class="tap-emoji" aria-hidden="true">🗑️</span>
           <span class="tap-label">Pick up trash</span>
         </button>
         <p class="tool">Using: <span id="tool">🥢 Trash Pick</span></p>
+      </section>
+
+      <!-- Shop UI workstream owns everything rendered inside #zones and #shop -->
+      <section class="zones-wrap" aria-label="Zones">
+        <h2>Zones</h2>
+        <div class="zones" id="zones"></div>
       </section>
 
       <section class="shop-wrap" aria-label="Upgrades">
@@ -49,15 +58,23 @@
 
       <footer class="bottom">
         <span id="saveStatus">Progress saves automatically</span>
-        <button class="reset" id="resetButton" type="button">Reset</button>
+        <span class="footer-buttons">
+          <button class="footer-btn" id="soundToggle" type="button">🔊 Sound</button>
+          <button class="footer-btn reset" id="resetButton" type="button">Reset</button>
+        </span>
       </footer>
     </main>
 
-    <!-- Load order matters: data contract → state → save → ui → main -->
+    <!-- Load order: data → logic → save → shared helpers → UI modules → main -->
     <script src="js/upgrades.js"></script>
+    <script src="js/zones.js"></script>
     <script src="js/state.js"></script>
     <script src="js/save.js"></script>
+    <script src="js/format.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/effects.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

@@ -4,18 +4,19 @@ A small clicker game about cleaning up Berlin. You start with a bare trash pick.
 
 Plain HTML/CSS/JS with no build step and no dependencies. Open `index.html` in a browser to play.
 
-## Project layout
+## Project layout and ownership
 
-| File | Responsibility |
-| --- | --- |
-| `js/upgrades.js` | **Upgrades data file (the contract).** Every upgrade's name, cost and effect. |
-| `js/state.js` | `CONFIG`, the game state object, and pure logic (tap, tick, buy, costs). No DOM. |
-| `js/save.js` | localStorage save/load. Checks saved data and fills in missing fields. |
-| `js/ui.js` | DOM rendering and number formatting. Reads state but never changes it. |
-| `js/main.js` | Bootstrap: wires input, runs the `requestAnimationFrame` loop, autosaves. |
-| `tests/run.js` | Tests for the contract, logic and save/load: `node tests/run.js` |
+Each file has a single owner. Modules talk only through the interfaces written in each file's header comment, so different workstreams can work in parallel without editing the same file.
 
-Scripts load in that order with plain `<script>` tags and share one global namespace, `window.TrashGame`. This means the game also runs from `file://`.
+| Workstream | Files | Interface it provides |
+| --- | --- | --- |
+| **Core** (integration) | `index.html`, `css/base.css`, `js/main.js`, `js/ui.js`, `js/format.js`, `README.md` | `UI`, `Format`, the wiring |
+| **Economy & content** | `js/upgrades.js`, `js/zones.js`, `js/state.js`, `js/save.js` | `UPGRADES`, `ZONES`, `CONFIG`, `State`, `Save` |
+| **Shop UI** | `js/shop.js`, `css/shop.css` | `Shop.init/render`, inside `#shop` and `#zones` |
+| **Juice** | `js/effects.js`, `js/audio.js`, `css/effects.css` | `Effects.*`, `Sound.*` |
+| **Tests** | `tests/**` | `node tests/run.js`, `node tests/e2e.js` |
+
+Scripts load with plain `<script>` tags in the order shown in `index.html` and share one global namespace, `window.TrashGame`, so the game also runs from `file://`. Only `main.js` changes state in response to input; every UI module reads state and reports actions through callbacks.
 
 ## The upgrades contract
 
@@ -37,12 +38,18 @@ Scripts load in that order with plain `<script>` tags and share one global names
 - The list is kept sorted by `baseCost`.
 - `node tests/run.js` checks all of these rules.
 
+## The zones contract
+
+`TrashGame.ZONES` in `js/zones.js`: `id`, `name`, `description`, `icon`, `unlockCost` (the first zone is 0), `trashMultiplier` (>= 1, applies to tap and per-second income) and `pfandChance` (0..1 per tap). Zones unlock in order and moving between unlocked zones is free. A Pfand bottle pays `State.pfandValue(state)` in bonus €.
+
 ## Game state
 
 ```js
 {
   trash, money, totalMoneyEarned, taps,  // numbers
   upgrades: { [id]: countOwned },
+  zone, zonesUnlocked: { [zoneId]: true },
+  pfandBottles, pfandMoney,              // lifetime Pfand stats
   startedAt, lastSaved                   // ms timestamps
 }
 ```

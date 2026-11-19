@@ -28,9 +28,15 @@
     const state = TrashGame.State.createState();
     if (!raw || typeof raw !== 'object') return state;
 
-    for (const key of ['trash', 'money', 'totalMoneyEarned', 'taps', 'startedAt', 'lastSaved']) {
+    for (const key of ['trash', 'money', 'totalMoneyEarned', 'taps', 'pfandBottles', 'pfandMoney', 'startedAt', 'lastSaved']) {
       if (isNum(raw[key])) state[key] = raw[key];
     }
+    if (raw.zonesUnlocked && typeof raw.zonesUnlocked === 'object') {
+      for (const z of TrashGame.ZONES) {
+        if (raw.zonesUnlocked[z.id] === true) state.zonesUnlocked[z.id] = true;
+      }
+    }
+    if (typeof raw.zone === 'string' && state.zonesUnlocked[raw.zone]) state.zone = raw.zone;
     if (raw.upgrades && typeof raw.upgrades === 'object') {
       for (const id of Object.keys(state.upgrades)) {
         const n = raw.upgrades[id];
