@@ -15,12 +15,16 @@
  *        trash: trash picked up; money: € earned from that trash;
  *        pfand: bonus € from a Pfand bottle on this tap (0 if none)
  *   tick(state, dtSeconds)        -> trash collected passively
- *   pfandValue(state)             -> € a bottle is worth right now
+ *   pfandValue(state)             -> € a bottle is worth right now:
+ *        PFAND_TAPS_WORTH taps of money + PFAND_SECONDS_WORTH seconds of
+ *        passive income, both in the current zone
  *   getZone(id), currentZone(state), isZoneUnlocked(state, id)
  *   nextZone(state)               -> the next locked zone, or null
  *   canUnlockZone(state, id), unlockZone(state, id) -> bool (also moves you there)
  *   travelTo(state, id)           -> bool (only to unlocked zones)
  *   currentTool(state)            -> best tap upgrade owned, or the trash pick
+ *   owned / isZoneUnlocked only count OWN, valid entries, so ids like
+ *   'constructor' or '__proto__' are never owned or unlocked.
  *
  * STATE SHAPE (also the save format; see save.js):
  *   trash, money, totalMoneyEarned, taps          numbers
@@ -38,7 +42,12 @@
     BASE_TRASH_PER_TAP: 1, // the starting trash pick
     MONEY_PER_TRASH: 1, // € earned per piece of trash collected
     DEFAULT_COST_GROWTH: 1.15,
-    PFAND_TAPS_WORTH: 10, // a Pfand bottle is worth this many taps' worth of money
+    // A Pfand bottle is worth PFAND_TAPS_WORTH taps' worth of money PLUS
+    // PFAND_SECONDS_WORTH seconds of passive income (both at the current zone's
+    // multiplier), so it stays a noticeable bonus late game, when most income
+    // is passive. See docs/economy.md.
+    PFAND_TAPS_WORTH: 8,
+    PFAND_SECONDS_WORTH: 2,
   });
 
   function createState() {
@@ -66,8 +75,12 @@
     return TrashGame.UPGRADES.find((u) => u.id === id) || null;
   }
 
+  const hasOwn = (obj, key) => !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+
   function owned(state, id) {
-    return state.upgrades[id] || 0;
+    if (!hasOwn(state.upgrades, id)) return 0; // e.g. 'constructor' is not an upgrade
+    const n = state.upgrades[id];
+    return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0;
   }
 
   function upgradeCost(upgrade, ownedCount) {
@@ -112,7 +125,7 @@
   }
 
   function isZoneUnlocked(state, id) {
-    return !!state.zonesUnlocked[id];
+    return !!getZone(id) && hasOwn(state.zonesUnlocked, id) && state.zonesUnlocked[id] === true;
   }
 
   function nextZone(state) {
@@ -153,7 +166,8 @@
   }
 
   function pfandValue(state) {
-    return trashPerTap(state) * TrashGame.CONFIG.MONEY_PER_TRASH * TrashGame.CONFIG.PFAND_TAPS_WORTH;
+    const C = TrashGame.CONFIG;
+    return (trashPerTap(state) * C.PFAND_TAPS_WORTH + trashPerSecond(state) * C.PFAND_SECONDS_WORTH) * C.MONEY_PER_TRASH;
   }
 
   function earn(state, amount) {

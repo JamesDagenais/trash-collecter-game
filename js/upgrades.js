@@ -25,16 +25,26 @@
  *
  * The player always starts with a bare trash pick, worth
  * CONFIG.BASE_TRASH_PER_TAP. It's the starting tool, not an upgrade.
+ *
+ * Design (see docs/economy.md; tune with `node tools/simulate.js`):
+ *   - Tap tools are the ladder trash pick -> Old Broom -> Bin Bags -> Push Cart
+ *     -> Street Sweeper. Everything else is passive help.
+ *   - Each tier costs ~2.5-6x the previous one. At 4 taps/s a tap tool pays for
+ *     itself faster than the helpers around it (it only works while you tap).
+ *   - Later tiers pay back more slowly, so the game stretches out: first buy
+ *     after ~15 taps, a new item every ~0.5-2 min for the first 10 minutes,
+ *     every ~3-7 min late, and everything bought once after ~45 min at 4 taps/s.
  */
 (function (root) {
   'use strict';
   const TrashGame = (root.TrashGame = root.TrashGame || {});
 
   TrashGame.UPGRADES = Object.freeze([
+    // ---- Your Kiez: the first few minutes ----------------------------------
     {
       id: 'broom',
       name: 'Old Broom',
-      description: 'Found behind a Späti. Missing a few bristles.',
+      description: 'Found leaning on a Späti wall. Missing a few bristles.',
       icon: '🧹',
       baseCost: 15,
       trashPerTap: 1,
@@ -43,19 +53,19 @@
     {
       id: 'helpful_neighbour',
       name: 'Helpful Neighbour',
-      description: 'Sweeps the Hinterhof while the coffee brews.',
+      description: 'Frau Schulz from the Vorderhaus sweeps the Hinterhof while her coffee brews.',
       icon: '🧑‍🦳',
-      baseCost: 60,
+      baseCost: 100,
       trashPerTap: 0,
-      trashPerSecond: 0.5,
+      trashPerSecond: 5,
     },
     {
       id: 'garbage_bags',
-      name: 'Garbage Bags',
-      description: 'A roll of extra-strong bags. Fewer trips to the bin.',
+      name: 'Bin Bags',
+      description: 'A roll of extra-strong bags. Fewer trips to the Hinterhof bins.',
       icon: '🛍️',
-      baseCost: 200,
-      trashPerTap: 3,
+      baseCost: 500,
+      trashPerTap: 4,
       trashPerSecond: 0,
     },
     {
@@ -63,72 +73,102 @@
       name: 'Pfand Collector',
       description: 'Knows every bottle on the Admiralbrücke by name.',
       icon: '🍾',
-      baseCost: 750,
+      baseCost: 2500,
       trashPerTap: 0,
-      trashPerSecond: 4,
+      trashPerSecond: 30,
     },
-    {
-      id: 'work_gloves',
-      name: 'Heavy-Duty Gloves',
-      description: 'Grab broken glass and kebab wrappers without worry.',
-      icon: '🧤',
-      baseCost: 2000,
-      trashPerTap: 10,
-      trashPerSecond: 0,
-    },
+    // ---- Görli and Tempelhof: wheels and crews -----------------------------
     {
       id: 'cargo_bike',
       name: 'Cargo Bike',
-      description: 'A Lastenrad full of bins. Very Kreuzberg.',
+      description: 'A Lastenrad stacked with bins. Very Kreuzberg.',
       icon: '🚲',
-      baseCost: 6000,
+      baseCost: 12000,
       trashPerTap: 0,
-      trashPerSecond: 20,
+      trashPerSecond: 75,
     },
     {
       id: 'handcart',
-      name: 'Handcart',
-      description: 'Big wheels for cobblestones and big hauls.',
+      name: 'Push Cart',
+      description: 'An orange push cart with a broom holder. Rattles over every cobblestone.',
       icon: '🛒',
-      baseCost: 15000,
-      trashPerTap: 40,
+      baseCost: 50000,
+      trashPerTap: 90,
       trashPerSecond: 0,
     },
     {
       id: 'kiez_crew',
       name: 'Kiez Cleanup Crew',
-      description: 'Volunteers clearing out the whole neighbourhood every Saturday.',
+      description: 'Neighbours with grabbers and gloves, every Saturday, rain or shine.',
       icon: '👷',
-      baseCost: 40000,
+      baseCost: 200000,
       trashPerTap: 0,
-      trashPerSecond: 100,
+      trashPerSecond: 500,
     },
     {
-      id: 'leaf_blower',
-      name: 'Leaf Blower',
-      description: 'Loud, effective, and hated by everyone at 7am.',
-      icon: '🍂',
-      baseCost: 120000,
-      trashPerTap: 200,
-      trashPerSecond: 0,
+      id: 'spaeti_alliance',
+      name: 'Späti Alliance',
+      description: 'Every Späti on the block sweeps its own stretch of pavement. Club-Mate for volunteers.',
+      icon: '🏪',
+      baseCost: 800000,
+      trashPerTap: 0,
+      trashPerSecond: 1300,
+    },
+    // ---- The city wakes up: night shifts, boats, machines ------------------
+    {
+      id: 'night_shift',
+      name: 'U-Bahn Night Shift',
+      description: 'Clears the U8 platforms between the last train and the first.',
+      icon: '🚇',
+      baseCost: 3500000,
+      trashPerTap: 0,
+      trashPerSecond: 4000,
+    },
+    {
+      id: 'spree_boat',
+      name: 'Spree Skimmer Boat',
+      description: 'Fishes bottles, bikes and the odd e-scooter out of the Spree.',
+      icon: '🚤',
+      baseCost: 15000000,
+      trashPerTap: 0,
+      trashPerSecond: 12000,
     },
     {
       id: 'sweeper_truck',
-      name: 'Street Sweeper Truck',
-      description: 'An orange beast that eats Kottbusser Tor for breakfast.',
+      name: 'Street Sweeper',
+      description: 'Bright orange, brushes spinning. Eats Kottbusser Tor for breakfast.',
       icon: '🚛',
-      baseCost: 400000,
+      baseCost: 80000000,
+      trashPerTap: 20000,
+      trashPerSecond: 0,
+    },
+    // ---- Late game: the whole city works for you ---------------------------
+    {
+      id: 'ringbahn_train',
+      name: 'Ringbahn Cleaning Train',
+      description: 'Loops the whole Ring every hour and never misses a platform.',
+      icon: '🚆',
+      baseCost: 200000000,
       trashPerTap: 0,
-      trashPerSecond: 600,
+      trashPerSecond: 90000,
     },
     {
       id: 'recycling_yard',
       name: 'Recycling Yard',
       description: 'Your own Recyclinghof. The trash comes to you now.',
       icon: '♻️',
-      baseCost: 1500000,
+      baseCost: 1200000000,
       trashPerTap: 0,
-      trashPerSecond: 3000,
+      trashPerSecond: 400000,
+    },
+    {
+      id: 'orange_fleet',
+      name: 'Orange Fleet',
+      description: 'A whole depot of orange trucks. Every Bezirk, every morning.',
+      icon: '🏭',
+      baseCost: 4000000000,
+      trashPerTap: 0,
+      trashPerSecond: 1000000,
     },
   ].map(Object.freeze));
 })(typeof window !== 'undefined' ? window : globalThis);
