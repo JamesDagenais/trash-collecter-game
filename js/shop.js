@@ -374,15 +374,27 @@
 
   // ---- zones -------------------------------------------------------------
 
+  /**
+   * A "tap zone" pays less passive income than a zone before it but has more
+   * Pfand: better while you're tapping, worse while idle. Worked out from the
+   * data, so the label follows any rebalance.
+   */
+  function isTapZone(z) {
+    const i = TrashGame.ZONES.indexOf(z);
+    return TrashGame.ZONES.slice(0, Math.max(0, i)).some((p) => p.trashMultiplier > z.trashMultiplier && p.pfandChance < z.pfandChance);
+  }
+
   function perkText(z) {
     const parts = ['×' + F().number(z.trashMultiplier, 2) + ' trash'];
     if (z.pfandChance > 0) parts.push('Pfand ' + percent(z.pfandChance));
+    if (isTapZone(z)) parts.push('best while tapping');
     return parts.join(' · ');
   }
 
   function perkLabel(z) {
     let text = F().number(z.trashMultiplier, 2) + ' times trash';
     if (z.pfandChance > 0) text += ', ' + percent(z.pfandChance) + ' Pfand chance per tap';
+    if (isTapZone(z)) text += '. Pays more while you tap, less while idle';
     return text;
   }
 

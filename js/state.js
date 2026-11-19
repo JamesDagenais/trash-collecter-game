@@ -95,6 +95,8 @@
 
   function upgradeCost(upgrade, ownedCount) {
     const growth = upgrade.costGrowth || TrashGame.CONFIG.DEFAULT_COST_GROWTH;
+    // Floats can't hold 1.15 exactly, so prices past ~€10 trillion may differ by €1
+    // from exact math. Harmless: the shown price and the buy check use this same number.
     return Math.ceil(upgrade.baseCost * Math.pow(growth, ownedCount));
   }
 

@@ -53,4 +53,6 @@ An independent review measured the economy against three player models: the gree
   - Recycling Yard €1.2B → **€1B**, Orange Fleet €4B → **€3B**, Alexanderplatz €10B → **€6B**. This shortens the late-game waits.
 - **Result (greedy bot):** everything is bought at 40:08 at 4 taps/s (was 46:00), 54:10 at 2 taps/s and 1h05 at 0.5 taps/s.
 - **Away progress:** while the tab is hidden or the game is closed, passive income keeps running at `OFFLINE_RATE` (50%) for up to `OFFLINE_MAX_SECONDS` (2 h).
-- **Open question:** the late game is mostly passive income. The review suggests a late tap tool (about €2B, +250,000 per tap) between Recycling Yard and Orange Fleet. That raises the moderate player's lifetime tap share from 15% to about 39% at 4 taps/s.
+- **Decided: no late tap tool.** The designer chose to keep the late game passive-led, as is usual for the genre: tapping matters early and Pfand-rich zones reward it mid-game.
+- **Pfand-rich zones are labelled.** A zone whose multiplier is below an earlier zone's but which has more Pfand (currently Mauerpark) shows "best while tapping" in the zones panel.
+- **Known limit:** prices are `ceil(baseCost × 1.15^n)` in floating point. Because 1.15 isn't exactly representable, prices past about €10 trillion (150+ copies) can be €1 off exact math. The shop shows and charges the same number, so nothing is inconsistent for the player.
