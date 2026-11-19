@@ -1,4 +1,7 @@
-/* Juice: floaters, tap animations. Owned by the Juice workstream. */
+/* Juice: floaters, debris, tap animations, toasts, banners. Owned by the Juice workstream.
+ * Only transform and opacity are animated. */
+
+/* ---- Floaters host --------------------------------------------------- */
 
 .floaters {
   position: absolute;
@@ -7,27 +10,433 @@
   overflow: visible;
   z-index: 2;
 }
+
+/* ---- Floating numbers ------------------------------------------------ */
+
 .floater {
   position: absolute;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
   font-weight: 800;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   color: var(--good);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-  animation: float-up 800ms ease-out forwards;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.5);
+  font-variant-numeric: tabular-nums;
+  will-change: transform, opacity;
+  animation: juice-float 800ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
-@keyframes float-up {
-  to {
-    transform: translate(-50%, -140%);
+@keyframes juice-float {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -70%) scale(1.18);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(calc(-50% + var(--dx) * 0.3), -95%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), -260%) scale(0.92);
     opacity: 0;
   }
 }
 
-.tap.bump .tap-emoji {
-  animation: bump 140ms ease-out;
+.floater.pfand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.9rem;
+  z-index: 3;
+  animation: juice-float-pfand 1400ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
-@keyframes bump {
-  50% {
-    transform: scale(1.15) rotate(-6deg);
+.floater-icon {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 63, 0.8));
+}
+.floater-value {
+  background: linear-gradient(180deg, #fff3a8 0%, #ffd23f 45%, #9be36d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 0 rgba(60, 40, 0, 0.6)) drop-shadow(0 0 10px rgba(255, 210, 63, 0.55));
+}
+@keyframes juice-float-pfand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    transform: translate(-50%, -70%) scale(1.45) rotate(var(--rot));
+    opacity: 1;
+  }
+  24% {
+    transform: translate(-50%, -80%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(calc(-50% + var(--dx) * 0.5), -170%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), -240%) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* ---- Debris particles ------------------------------------------------ */
+
+.debris {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  will-change: transform, opacity;
+  animation: juice-debris var(--dur, 650ms) linear forwards;
+}
+@keyframes juice-debris {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.5);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1); /* decelerate up */
+  }
+  35% {
+    transform: translate(-50%, -50%) translate(calc(var(--dx) * 0.5), var(--dy)) rotate(calc(var(--rot) * 0.4)) scale(1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.4); /* accelerate down */
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), calc(var(--dy) + var(--fall))) rotate(var(--rot)) scale(0.8);
+    opacity: 0;
+  }
+}
+.debris-bottle {
+  font-size: 2rem;
+  z-index: 3;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 63, 0.7));
+}
+.debris-sparkle {
+  font-size: 1rem;
+}
+
+/* ---- Tap button ------------------------------------------------------ */
+
+.tap {
+  position: relative; /* anchor for the Pfand ring */
+}
+/* `scale` composes with base.css's :active translateY instead of fighting it. */
+.tap.juice-squash-a {
+  animation: juice-squash-a 180ms ease-out;
+}
+.tap.juice-squash-b {
+  animation: juice-squash-b 180ms ease-out;
+}
+.tap.juice-squash-a .tap-emoji {
+  animation: juice-wobble-a 220ms ease-out;
+}
+.tap.juice-squash-b .tap-emoji {
+  animation: juice-wobble-b 220ms ease-out;
+}
+@keyframes juice-squash-a {
+  0% { scale: 1; }
+  30% { scale: 1.07 0.9; }
+  65% { scale: 0.97 1.04; }
+  100% { scale: 1; }
+}
+@keyframes juice-squash-b {
+  0% { scale: 1; }
+  30% { scale: 1.07 0.9; }
+  65% { scale: 0.97 1.04; }
+  100% { scale: 1; }
+}
+@keyframes juice-wobble-a {
+  40% { transform: scale(1.16) rotate(-7deg); }
+  100% { transform: none; }
+}
+@keyframes juice-wobble-b {
+  40% { transform: scale(1.16) rotate(7deg); }
+  100% { transform: none; }
+}
+
+/* Ring that pulses out of the button: gold for Pfand, white for a tool upgrade. */
+.tap::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 5px solid #ffd23f;
+  box-shadow: 0 0 18px rgba(255, 210, 63, 0.8), inset 0 0 12px rgba(255, 210, 63, 0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+.tap.juice-pfand-a::after {
+  animation: juice-ring-a 650ms ease-out;
+}
+.tap.juice-pfand-b::after {
+  animation: juice-ring-b 650ms ease-out;
+}
+.tap.juice-power-a::after,
+.tap.juice-power-b::after {
+  border-color: var(--text);
+  box-shadow: 0 0 14px rgba(241, 239, 230, 0.6);
+}
+.tap.juice-power-a::after {
+  animation: juice-ring-a 550ms ease-out;
+}
+.tap.juice-power-b::after {
+  animation: juice-ring-b 550ms ease-out;
+}
+@keyframes juice-ring-a {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+@keyframes juice-ring-b {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* ---- Full-screen layer: toasts, banners, confetti --------------------- */
+
+.juice-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.juice-toasts {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.juice-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 2px solid var(--good);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  animation: juice-toast-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.juice-toast > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.juice-toast-icon {
+  font-size: 1.2rem;
+}
+.juice-toast-count {
+  color: var(--good);
+  font-variant-numeric: tabular-nums;
+}
+.juice-toast-count:empty {
+  display: none;
+}
+.juice-toast.juice-bump-a {
+  animation: juice-bump-a 220ms ease-out;
+}
+.juice-toast.juice-bump-b {
+  animation: juice-bump-b 220ms ease-out;
+}
+.juice-toast.leaving {
+  animation: juice-toast-out 260ms ease-in forwards;
+}
+@keyframes juice-toast-in {
+  from { transform: translateY(-24px) scale(0.9); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes juice-toast-out {
+  from { transform: none; opacity: 1; }
+  to { transform: translateY(-16px) scale(0.95); opacity: 0; }
+}
+@keyframes juice-bump-a {
+  40% { transform: scale(1.08); }
+}
+@keyframes juice-bump-b {
+  40% { transform: scale(1.08); }
+}
+
+.juice-banner {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: min(340px, calc(100% - 32px));
+  padding: 18px 20px 20px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  border: 3px solid var(--accent);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 0 6px rgba(255, 138, 0, 0.18);
+  text-align: center;
+  color: var(--text);
+  animation: juice-banner-small 1400ms ease both;
+}
+.juice-banner.big {
+  animation: juice-banner-big 2800ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.juice-banner-icon {
+  font-size: 3rem;
+  line-height: 1.1;
+}
+.juice-banner.big .juice-banner-icon {
+  font-size: 4rem;
+  animation: juice-icon-pop 700ms 150ms cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+.juice-banner-kicker {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+.juice-banner-title {
+  margin-top: 2px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.juice-banner.big .juice-banner-title {
+  font-size: 1.6rem;
+}
+.juice-banner-desc {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+/* Small (travel) banner: a lighter pill near the top. */
+.juice-banner:not(.big) {
+  top: 18%;
+  padding: 10px 16px 12px;
+  width: auto;
+  max-width: calc(100% - 32px);
+  border-width: 2px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.juice-banner:not(.big) .juice-banner-icon {
+  font-size: 2rem;
+}
+.juice-banner:not(.big) .juice-banner-title {
+  font-size: 1.1rem;
+}
+@keyframes juice-banner-big {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  12% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
+  20% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  86% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(0.96); opacity: 0; }
+}
+@keyframes juice-banner-small {
+  0% { transform: translate(-50%, -30%); opacity: 0; }
+  18% { transform: translate(-50%, -50%); opacity: 1; }
+  80% { transform: translate(-50%, -50%); opacity: 1; }
+  100% { transform: translate(-50%, -70%); opacity: 0; }
+}
+@keyframes juice-icon-pop {
+  0% { transform: scale(0.2) rotate(-25deg); }
+  60% { transform: scale(1.25) rotate(8deg); }
+  100% { transform: none; }
+}
+
+.juice-confetti {
+  position: absolute;
+  inset: 0;
+}
+.juice-confetti i {
+  position: absolute;
+  top: -16px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: juice-confetti;
+  animation-timing-function: cubic-bezier(0.3, 0.4, 0.6, 1);
+  animation-fill-mode: both;
+}
+@keyframes juice-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* ---- Reduced motion: keep the numbers, drop the big movement ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .floater {
+    animation-name: juice-float-calm;
+  }
+  .floater.pfand {
+    animation-name: juice-float-calm;
+  }
+  @keyframes juice-float-calm {
+    0% { transform: translate(-50%, -50%); opacity: 0; }
+    15% { transform: translate(-50%, -60%); opacity: 1; }
+    100% { transform: translate(-50%, -110%); opacity: 0; }
+  }
+  .tap.juice-squash-a,
+  .tap.juice-squash-b,
+  .tap.juice-squash-a .tap-emoji,
+  .tap.juice-squash-b .tap-emoji {
+    animation: none;
+  }
+  .tap.juice-pfand-a::after,
+  .tap.juice-pfand-b::after,
+  .tap.juice-power-a::after,
+  .tap.juice-power-b::after {
+    animation-name: juice-ring-fade;
+  }
+  @keyframes juice-ring-fade {
+    0% { transform: none; opacity: 1; }
+    100% { transform: none; opacity: 0; }
+  }
+  .debris,
+  .juice-confetti {
+    display: none;
+  }
+  .juice-toast,
+  .juice-toast.juice-bump-a,
+  .juice-toast.juice-bump-b {
+    animation: juice-fade-in 200ms ease both;
+  }
+  .juice-toast.leaving {
+    animation: juice-fade-out 200ms ease forwards;
+  }
+  .juice-banner,
+  .juice-banner.big {
+    animation-name: juice-banner-fade;
+  }
+  .juice-banner.big .juice-banner-icon {
+    animation: none;
+  }
+  @keyframes juice-banner-fade {
+    0% { transform: translate(-50%, -50%); opacity: 0; }
+    12% { transform: translate(-50%, -50%); opacity: 1; }
+    86% { transform: translate(-50%, -50%); opacity: 1; }
+    100% { transform: translate(-50%, -50%); opacity: 0; }
+  }
+  @keyframes juice-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes juice-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
   }
 }
