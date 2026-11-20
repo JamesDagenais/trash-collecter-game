@@ -127,6 +127,12 @@
     if (typeof raw.zone === 'string' && TrashGame.State.getZone(raw.zone) && TrashGame.State.isZoneUnlocked(state, raw.zone)) {
       state.zone = raw.zone;
     }
+    if (isObj(raw.achievements)) {
+      for (const a of TrashGame.ACHIEVEMENTS || []) {
+        if (hasOwn(raw.achievements, a.id) && isNum(raw.achievements[a.id])) state.achievements[a.id] = raw.achievements[a.id];
+      }
+      // Achievement ids no longer in ACHIEVEMENTS are dropped.
+    }
     if (raw.upgrades && typeof raw.upgrades === 'object') {
       for (const id of Object.keys(state.upgrades)) {
         const n = raw.upgrades[id];

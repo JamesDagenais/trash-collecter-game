@@ -65,10 +65,13 @@
           <span class="sheet-grip" aria-hidden="true"></span>
           <div class="sheet-tabs" role="tablist" aria-label="Shop sections">
             <button class="sheet-tab" id="tabShop" type="button" role="tab" aria-selected="true" aria-controls="paneShop">
-              <span class="sheet-tab-icon gear" aria-hidden="true"></span>Gear &amp; Help
+              <span class="sheet-tab-icon gear" aria-hidden="true"></span>Gear
             </button>
             <button class="sheet-tab" id="tabZones" type="button" role="tab" aria-selected="false" aria-controls="paneZones" tabindex="-1">
               <span class="sheet-tab-icon map" aria-hidden="true"></span>Zones
+            </button>
+            <button class="sheet-tab" id="tabAwards" type="button" role="tab" aria-selected="false" aria-controls="paneAwards" tabindex="-1">
+              <span class="sheet-tab-icon trophy" aria-hidden="true"></span>Awards
             </button>
           </div>
           <button class="sheet-toggle" id="sheetToggle" type="button" aria-expanded="false" aria-controls="sheetBody" aria-label="Open shop">
@@ -83,6 +86,10 @@
           <div class="pane" id="paneZones" role="tabpanel" aria-labelledby="tabZones" hidden>
             <div class="zones" id="zones"></div>
           </div>
+          <!-- Awards (achievements) render inside #achievements -->
+          <div class="pane" id="paneAwards" role="tabpanel" aria-labelledby="tabAwards" hidden>
+            <div id="achievements"></div>
+          </div>
           <p class="save-status" id="saveStatus">Progress saves automatically</p>
         </div>
       </section>
@@ -93,6 +100,7 @@
     <script src="js/upgrades.js"></script>
     <script src="js/zones.js"></script>
     <script src="js/state.js"></script>
+    <script src="js/achievements.js"></script>
     <script src="js/save.js"></script>
     <script src="js/format.js"></script>
     <script src="js/sprites.js"></script>
@@ -100,6 +108,7 @@
     <script src="js/sheet.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/shop.js"></script>
+    <script src="js/awards.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/effects.js"></script>
     <script src="js/main.js"></script>

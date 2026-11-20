@@ -26,6 +26,16 @@
  *   canUnlockZone(state, id), unlockZone(state, id) -> bool (also moves you there)
  *   travelTo(state, id)           -> bool (only to unlocked zones)
  *   currentTool(state)            -> best tap upgrade owned, or the trash pick
+ *   upgradeName(state, id)        -> display name, after evolutions (e.g. "Golden Broom")
+ *   evolutionTier(state, id)      -> 0 (none), 1, 2… highest evolution unlocked
+ *   getAchievement(id), isAchievementUnlocked(state, id), achievementCount(state)
+ *   achievementProgress(state, a) -> 0..1 (best effort; 0 for custom/secret)
+ *   bonuses(state)                -> { global, tap, passive, pfand } total multipliers
+ *        from achievements (1 = no bonus); already included in the rates above
+ *   checkAchievements(state, now?) -> newly unlocked achievements (array). Call it
+ *        after anything that changes state; it's cheap.
+ *   unlockAchievement(state, id, now?) -> bool (debugging / tests). Only these two
+ *        may write state.achievements: the bonus cache relies on it.
  *   owned / isZoneUnlocked only count OWN, valid entries, so ids like
  *   'constructor' or '__proto__' are never owned or unlocked.
  *
@@ -35,6 +45,7 @@
  *   zone: currentZoneId
  *   zonesUnlocked: { [zoneId]: true }
  *   pfandBottles, pfandMoney                     numbers (lifetime)
+ *   achievements: { [achievementId]: unlockedAtMs }
  *   startedAt, lastSaved                         ms timestamps
  *   saveRev                                      save revision (see save.js)
  */
@@ -57,6 +68,7 @@
     OFFLINE_RATE: 0.5,
     OFFLINE_MAX_SECONDS: 2 * 60 * 60,
     MAX_OWNED: 1e6, // per upgrade; keeps counts far from float-precision trouble
+    ACHIEVEMENT_BONUS: 0.005, // every achievement: +0.5% to all trash ("Kiez reputation")
   });
 
   function createState() {
@@ -73,6 +85,7 @@
       zonesUnlocked: { [firstZone]: true },
       pfandBottles: 0,
       pfandMoney: 0,
+      achievements: {},
       startedAt: Date.now(),
       lastSaved: null,
       saveRev: 0,
@@ -164,23 +177,189 @@
     return true;
   }
 
+  // ---- Achievements ----------------------------------------------------
+
+  const achievementList = () => TrashGame.ACHIEVEMENTS || [];
+  let achievementIndex = null;
+
+  function getAchievement(id) {
+    if (!achievementIndex || achievementIndex.list !== achievementList()) {
+      achievementIndex = { list: achievementList(), byId: new Map(achievementList().map((a) => [a.id, a])) };
+    }
+    return achievementIndex.byId.get(id) || null;
+  }
+
+  function isAchievementUnlocked(state, id) {
+    return !!getAchievement(id) && hasOwn(state.achievements, id) && typeof state.achievements[id] === 'number';
+  }
+
+  function achievementCount(state) {
+    let n = 0;
+    for (const id in state.achievements || {}) if (isAchievementUnlocked(state, id)) n++;
+    return n;
+  }
+
+  // The fixed part of the bonuses only changes when an achievement unlocks, so it
+  // is cached per achievements object. checkAchievements / unlockAchievement bump
+  // its version; a new object (load, reset) starts a new cache entry. Write to
+  // state.achievements only through those two functions.
+  const bonusCache = new WeakMap(); // achievements object -> { version, list, b }
+  const versions = new WeakMap(); // achievements object -> number
+
+  function bump(obj) {
+    versions.set(obj, (versions.get(obj) || 0) + 1);
+  }
+
+  function staticBonuses(state) {
+    const obj = state.achievements && typeof state.achievements === 'object' ? state.achievements : null;
+    const version = obj ? versions.get(obj) || 0 : -1;
+    const hit = obj && bonusCache.get(obj);
+    if (hit && hit.version === version && hit.list === achievementList()) return hit.b;
+    const b = { count: 0, global: 0, tap: 0, passive: 0, pfand: 0, perOwned: [] };
+    for (const id of state.achievements ? Object.keys(state.achievements) : []) {
+      if (!isAchievementUnlocked(state, id)) continue;
+      const a = getAchievement(id);
+      b.count++;
+      const r = a.reward;
+      if (!r) continue;
+      if (r.type === 'perOwned') b.perOwned.push(r);
+      else if (r.type in b) b[r.type] += r.pct;
+    }
+    if (obj) bonusCache.set(obj, { version, list: achievementList(), b });
+    return b;
+  }
+
+  function bonuses(state) {
+    const b = staticBonuses(state);
+    let tap = b.tap;
+    let passive = b.passive;
+    for (const r of b.perOwned) {
+      const add = r.pct * owned(state, r.upgrade);
+      if (r.target === 'tap') tap += add;
+      else passive += add;
+    }
+    return {
+      global: 1 + b.count * TrashGame.CONFIG.ACHIEVEMENT_BONUS + b.global,
+      tap: 1 + tap,
+      passive: 1 + passive,
+      pfand: 1 + b.pfand,
+    };
+  }
+
+  function evolutionTier(state, id) {
+    let tier = 0;
+    for (const a of achievementList()) {
+      if (a.evolves && a.evolves.upgrade === id && a.evolves.tier > tier && isAchievementUnlocked(state, a.id)) tier = a.evolves.tier;
+    }
+    return tier;
+  }
+
+  function upgradeName(state, id) {
+    const u = getUpgrade(id);
+    if (!u) return '';
+    let best = null;
+    for (const a of achievementList()) {
+      if (a.evolves && a.evolves.upgrade === id && isAchievementUnlocked(state, a.id) && (!best || a.evolves.tier > best.tier)) best = a.evolves;
+    }
+    return best ? best.name : u.name;
+  }
+
+  function reqMet(state, req, rates) {
+    switch (req.type) {
+      case 'owned':
+        return owned(state, req.upgrade) >= req.count;
+      case 'ownAll':
+        return TrashGame.UPGRADES.every((u) => owned(state, u.id) >= req.count);
+      case 'zone':
+        return isZoneUnlocked(state, req.zone);
+      case 'allZones':
+        return TrashGame.ZONES.every((z) => isZoneUnlocked(state, z.id));
+      case 'stat':
+        return typeof state[req.stat] === 'number' && state[req.stat] >= req.amount;
+      case 'rate':
+        return (req.rate === 'perTap' ? rates().perTap : rates().perSecond) >= req.amount;
+      case 'custom':
+        try {
+          return !!req.test(state, TrashGame.State);
+        } catch (e) {
+          return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  function checkAchievements(state, now = Date.now()) {
+    if (!state.achievements || typeof state.achievements !== 'object') state.achievements = {};
+    let cached = null;
+    const rates = () => cached || (cached = { perTap: trashPerTap(state), perSecond: trashPerSecond(state) });
+    const unlocked = [];
+    for (const a of achievementList()) {
+      if (hasOwn(state.achievements, a.id)) continue;
+      if (reqMet(state, a.req, rates)) {
+        state.achievements[a.id] = now;
+        unlocked.push(a);
+      }
+    }
+    if (unlocked.length) bump(state.achievements);
+    return unlocked;
+  }
+
+  /** Unlocks one achievement directly (debugging, tests). Returns true if it was new. */
+  function unlockAchievement(state, id, now = Date.now()) {
+    if (!getAchievement(id) || isAchievementUnlocked(state, id)) return false;
+    if (!state.achievements || typeof state.achievements !== 'object') state.achievements = {};
+    state.achievements[id] = now;
+    bump(state.achievements);
+    return true;
+  }
+
+  /** How close you are, 0..1, for the menu's progress bars. */
+  function achievementProgress(state, a) {
+    if (isAchievementUnlocked(state, a.id)) return 1;
+    const r = a.req;
+    const frac = (have, need) => Math.max(0, Math.min(1, need > 0 ? have / need : 0));
+    switch (r.type) {
+      case 'owned':
+        return frac(owned(state, r.upgrade), r.count);
+      case 'ownAll':
+        return frac(Math.min(...TrashGame.UPGRADES.map((u) => owned(state, u.id))), r.count);
+      case 'allZones':
+        return frac(TrashGame.ZONES.filter((z) => isZoneUnlocked(state, z.id)).length, TrashGame.ZONES.length);
+      case 'zone': {
+        const z = getZone(r.zone);
+        return z && z.unlockCost > 0 ? frac(state.money, z.unlockCost) : 0;
+      }
+      case 'stat':
+        return frac(state[r.stat] || 0, r.amount);
+      case 'rate':
+        return frac(r.rate === 'perTap' ? trashPerTap(state) : trashPerSecond(state), r.amount);
+      default:
+        return 0;
+    }
+  }
+
   // ---- Income ----------------------------------------------------------
 
   function trashPerTap(state) {
     let total = TrashGame.CONFIG.BASE_TRASH_PER_TAP;
     for (const u of TrashGame.UPGRADES) total += u.trashPerTap * owned(state, u.id);
-    return total * currentZone(state).trashMultiplier;
+    const b = bonuses(state);
+    return total * b.tap * b.global * currentZone(state).trashMultiplier;
   }
 
   function trashPerSecond(state) {
     let total = 0;
     for (const u of TrashGame.UPGRADES) total += u.trashPerSecond * owned(state, u.id);
-    return total * currentZone(state).trashMultiplier;
+    if (total === 0) return 0;
+    const b = bonuses(state);
+    return total * b.passive * b.global * currentZone(state).trashMultiplier;
   }
 
   function pfandValue(state) {
     const C = TrashGame.CONFIG;
-    return (trashPerTap(state) * C.PFAND_TAPS_WORTH + trashPerSecond(state) * C.PFAND_SECONDS_WORTH) * C.MONEY_PER_TRASH;
+    const base = (trashPerTap(state) * C.PFAND_TAPS_WORTH + trashPerSecond(state) * C.PFAND_SECONDS_WORTH) * C.MONEY_PER_TRASH;
+    return base * bonuses(state).pfand;
   }
 
   function earn(state, amount) {
@@ -248,5 +427,14 @@
     tap,
     tick,
     awayProgress,
+    getAchievement,
+    isAchievementUnlocked,
+    achievementCount,
+    achievementProgress,
+    bonuses,
+    evolutionTier,
+    upgradeName,
+    checkAchievements,
+    unlockAchievement,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

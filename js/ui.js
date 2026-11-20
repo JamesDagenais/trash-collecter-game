@@ -55,8 +55,9 @@
         toggle: $('sheetToggle'),
         scrim: $('sheetScrim'),
         body: $('sheetBody'),
-        tabs: { shop: $('tabShop'), zones: $('tabZones') },
-        panes: { shop: $('paneShop'), zones: $('paneZones') },
+        tabs: { shop: $('tabShop'), zones: $('tabZones'), awards: $('tabAwards') },
+        panes: { shop: $('paneShop'), zones: $('paneZones'), awards: $('paneAwards') },
+        fullOnly: ['awards'],
       });
       if (el.zoneButton) el.zoneButton.addEventListener('click', () => TrashGame.Sheet.open('zones'));
     }
@@ -68,9 +69,10 @@
     setText(el.perTap, F().number(S().trashPerTap(state), 1));
     setText(el.perSecond, F().number(S().trashPerSecond(state), 1));
     const tool = S().currentTool(state);
-    if (tool !== lastTool) {
-      lastTool = tool;
-      setText(el.tool, tool.name);
+    const toolName = (S().upgradeName && S().upgradeName(state, tool.id)) || tool.name; // evolved name, if any
+    if (tool.id + '|' + toolName !== lastTool) {
+      lastTool = tool.id + '|' + toolName;
+      setText(el.tool, toolName);
       if (el.toolIcon && TrashGame.Pixel) {
         const url = TrashGame.Pixel.icon(tool.id, tool.icon);
         el.toolIcon.style.backgroundImage = url ? 'url(' + url + ')' : '';

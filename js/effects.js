@@ -441,5 +441,100 @@
     }
   }
 
-  TrashGame.Effects = { init, tap, purchase, zoneUnlocked, travel, welcomeBack };
+  // ---- Achievements ------------------------------------------------------
+
+  /** A two-line trophy toast: "Achievement · Kehrwoche" + what it gives. */
+  function achievement(a) {
+    try {
+      if (!a || !toastBox) return;
+      while (toasts.length >= MAX_TOASTS) kill(toasts[0], toasts);
+      const t = document.createElement('div');
+      t.className = 'juice-toast achievement';
+      t._key = 'ach:' + a.id;
+      t._count = 1;
+      const icon = iconNode('juice-toast-icon', a.req && a.req.type === 'owned' ? a.req.upgrade : '', a.icon);
+      const text = document.createElement('span');
+      text.className = 'juice-toast-text';
+      const kicker = document.createElement('span');
+      kicker.className = 'juice-toast-kicker';
+      kicker.textContent = 'Achievement';
+      const name = document.createElement('span');
+      name.className = 'juice-toast-title';
+      name.textContent = a.name;
+      const reward = document.createElement('span');
+      reward.className = 'juice-toast-sub';
+      reward.textContent = TrashGame.Awards ? TrashGame.Awards.rewardText(a) : '';
+      text.append(kicker, name, reward);
+      const c = document.createElement('span');
+      c.className = 'juice-toast-count';
+      t.append(icon, text, c);
+      toasts.push(t);
+      toastBox.appendChild(t);
+      t._juiceTimer = setTimeout(() => dismiss(t), 2600);
+    } catch (e) {
+      /* ignore */
+    }
+    sound('pfand');
+  }
+
+  /** Many at once (e.g. an old save loading): one toast instead of a pile. */
+  function achievementSummary(list) {
+    try {
+      if (!list || !list.length || !toastBox) return;
+      const first = list[0];
+      achievement({
+        id: 'summary',
+        icon: '🏆',
+        name: list.length === 1 ? first.name : list.length + ' achievements unlocked!',
+        req: {},
+        reward: null,
+      });
+      const last = toasts[toasts.length - 1];
+      if (last && TrashGame.CONFIG) {
+        const sub = last.querySelector('.juice-toast-sub');
+        if (sub) sub.textContent = 'See them under Awards · +' + F().number(list.length * TrashGame.CONFIG.ACHIEVEMENT_BONUS * 100, 1) + '% all trash';
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  /** "Old Broom evolved into Kehrmeister Broom!" */
+  function evolution(a, upgrade) {
+    try {
+      if (!a || !a.evolves || !layer) return;
+      if (banner) banner.remove();
+      const b = document.createElement('div');
+      b.className = 'juice-banner big evolution';
+      b.setAttribute('role', 'status');
+      b.append(iconNode('juice-banner-icon evolve-icon', a.evolves.upgrade, upgrade ? upgrade.icon : '✨'));
+      const kicker = document.createElement('div');
+      kicker.className = 'juice-banner-kicker';
+      kicker.textContent = '✨ Evolution ✨';
+      const title = document.createElement('div');
+      title.className = 'juice-banner-title';
+      title.textContent = a.evolves.name + '!';
+      const d = document.createElement('div');
+      d.className = 'juice-banner-desc';
+      d.textContent = TrashGame.Awards ? TrashGame.Awards.rewardText(a) : a.description;
+      b.append(kicker, title, d);
+      layer.appendChild(b);
+      banner = b;
+      if (!reducedMotion()) confetti();
+      const lifeMs = 3400; // matches .juice-banner.evolution in effects.css
+      const done = () => {
+        if (b.parentNode) b.remove();
+        if (banner === b) banner = null;
+      };
+      b.addEventListener('animationend', (e) => {
+        if (e.target === b) done();
+      });
+      setTimeout(done, lifeMs + 300);
+    } catch (e) {
+      /* ignore */
+    }
+    sound('zone');
+  }
+
+  TrashGame.Effects = { init, tap, purchase, zoneUnlocked, travel, welcomeBack, achievement, achievementSummary, evolution };
 })(typeof window !== 'undefined' ? window : globalThis);

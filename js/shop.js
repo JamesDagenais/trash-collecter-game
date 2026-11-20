@@ -168,7 +168,9 @@
     const fx = el('span', 'upgrade-effects');
     const fxTap = el('span', 'upgrade-fx upgrade-fx-tap');
     const fxSec = el('span', 'upgrade-fx upgrade-fx-sec');
-    fx.append(fxTap, fxSec);
+    const fxEvo = el('span', 'upgrade-fx upgrade-fx-evo');
+    fxEvo.hidden = true;
+    fx.append(fxTap, fxSec, fxEvo);
     body.append(name, desc, fx);
 
     const side = el('span', 'upgrade-side');
@@ -183,15 +185,20 @@
 
     button.append(iconWrap, body, side, bar);
 
+    // This upgrade's evolutions (from the achievements data), lowest tier first.
+    const evolutions = (TrashGame.ACHIEVEMENTS || []).filter((a) => a.evolves && a.evolves.upgrade === u.id).sort((a, b) => a.evolves.tier - b.evolves.tier);
     const row = {
       u,
       button,
+      name,
+      fxEvo,
+      evolutions,
       count,
       fxTap,
       fxSec,
       price,
       fill,
-      cache: { visible: false, affordable: null, cost: null, owned: null, progress: null, fx: '' },
+      cache: { visible: false, affordable: null, cost: null, owned: null, progress: null, fx: '', name: u.name, tier: 0, evo: '' },
       fxText: '',
     };
 
@@ -234,7 +241,8 @@
   // ---- upgrades: render --------------------------------------------------
 
   function effectsKey(state) {
-    let key = state.zone + '|';
+    // achievements change the bonuses, so they change what one more copy adds
+    let key = state.zone + '|' + (S().achievementCount ? S().achievementCount(state) : 0) + '|';
     for (const r of rows) key += S().owned(state, r.u.id) + ',';
     return key;
   }
@@ -316,14 +324,36 @@
         setText(r.count, owned > 0 ? F().number(owned) : '');
         r.button.classList.toggle('owned', owned > 0);
       }
-      if (c.fx !== r.fxText || c.labelCost !== cost || c.labelOwned !== owned) {
+      // Evolutions: new name, a golden edge, and the next goal as a pill.
+      const displayName = S().upgradeName ? S().upgradeName(state, u.id) : u.name;
+      if (c.name !== displayName) {
+        c.name = displayName;
+        setText(r.name, displayName);
+      }
+      const tier = S().evolutionTier ? S().evolutionTier(state, u.id) : 0;
+      if (c.tier !== tier) {
+        r.button.classList.remove('evolved-' + c.tier);
+        c.tier = tier;
+        if (tier > 0) r.button.classList.add('evolved-' + tier);
+      }
+      const nextEvo = r.evolutions.find((a) => !S().isAchievementUnlocked(state, a.id));
+      const evoText = nextEvo ? '✨ evolves at ' + F().number(nextEvo.req.count) : '';
+      if (c.evo !== evoText) {
+        c.evo = evoText;
+        setText(r.fxEvo, evoText);
+        r.fxEvo.hidden = !evoText;
+      }
+      if (c.fx !== r.fxText || c.labelCost !== cost || c.labelOwned !== owned || c.labelName !== displayName) {
         c.fx = r.fxText;
         c.labelCost = cost;
         c.labelOwned = owned;
+        c.labelName = displayName;
         setAttr(
           r.button,
           'aria-label',
-          `Buy ${u.name} for ${F().money(cost)}. Owned: ${F().number(owned)}.` + (r.fxText ? ` Gives ${r.fxText}.` : '')
+          `Buy ${displayName} for ${F().money(cost)}. Owned: ${F().number(owned)}.` +
+            (r.fxText ? ` Gives ${r.fxText}.` : '') +
+            (evoText ? ` Evolves at ${nextEvo.req.count}.` : '')
         );
       }
       if (visible) {

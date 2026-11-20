@@ -612,6 +612,7 @@
   let fadeStart = 0;
   let lastKey = '';
   let owned = {}; // id -> count, as last seen
+  let evo = {}; // id -> evolution tier (0 = not evolved), from the achievements
   let ownedKey = '';
   let zoneId = null;
   let initialised = false;
@@ -793,6 +794,24 @@
     return { rect };
   }
 
+  /** Little golden glints around an evolved tool: tier 1 = 2 glints, tier 2 = 4. */
+  function twinkle(c, x, y, w, h, tier, t) {
+    if (!tier) return;
+    const step = Math.floor((t || 0) / 300);
+    for (let i = 0; i < tier * 2; i++) {
+      const seed = (step + i * 7) * 2654435761;
+      const gx = x + (((seed >>> 3) % 1000) / 1000) * w;
+      const gy = y + (((seed >>> 13) % 1000) / 1000) * h;
+      const on = (step + i) % 3 !== 0;
+      if (!on) continue;
+      P().px(c, Math.round(gx), Math.round(gy), '#ffd86b');
+      if (i % 2 === 0) {
+        P().px(c, Math.round(gx) - 1, Math.round(gy), '#fffaf0');
+        P().px(c, Math.round(gx) + 1, Math.round(gy), '#fffaf0');
+      }
+    }
+  }
+
   function drawHero(c, now, t) {
     const { draw, line, rect, px } = P();
     const pose = currentPose(now);
@@ -807,7 +826,10 @@
     const has = (id) => owned[id] > 0;
 
     // things behind him
-    if (has('garbage_bags')) draw(c, 'binbag', sc.hx - 8, sc.hy + 17 + bob);
+    if (has('garbage_bags')) {
+      draw(c, 'binbag', sc.hx - 8, sc.hy + 17 + bob);
+      twinkle(c, sc.hx - 9, sc.hy + 15 + bob, 14, 14, evo.garbage_bags, t);
+    }
 
     // body: everything but the boots bobs
     c.drawImage(hero.canvas, 0, 0, hero.w, 48, hx, hy, hero.w, 48);
@@ -860,11 +882,18 @@
         const bx = hx - 1;
         line(c, bx + 3, hy + 22, bx - 1, sc.floor - 6, 'k', 3);
         line(c, bx + 3, hy + 22, bx - 1, sc.floor - 6, 'c', 1);
+        // evolutions recolour it: Kehrmeister = orange, Golden = gold
+        const tier = evo.broom || 0;
+        const band = tier >= 2 ? 'z' : tier === 1 ? 'x' : 'Y';
+        const bristle = tier >= 2 ? 'z' : tier === 1 ? 'o' : 'y';
+        const shade = tier >= 2 ? 'y' : tier === 1 ? 'O' : 'Y';
+        if (tier >= 2) line(c, bx + 3, hy + 22, bx - 1, sc.floor - 6, 'y', 1);
         rect(c, bx - 5, sc.floor - 7, 9, 2, 'k');
         rect(c, bx - 6, sc.floor - 5, 11, 5, 'k');
-        rect(c, bx - 5, sc.floor - 6, 9, 1, 'Y');
-        rect(c, bx - 5, sc.floor - 5, 9, 4, 'y');
-        for (let i = 0; i < 4; i++) rect(c, bx - 4 + i * 2, sc.floor - 4, 1, 3, 'Y');
+        rect(c, bx - 5, sc.floor - 6, 9, 1, band);
+        rect(c, bx - 5, sc.floor - 5, 9, 4, bristle);
+        for (let i = 0; i < 4; i++) rect(c, bx - 4 + i * 2, sc.floor - 4, 1, 3, shade);
+        twinkle(c, bx - 7, sc.floor - 24, 12, 22, tier, t);
       }
       draw(c, 'hero_fist', hx, hy + 37);
     }
@@ -891,6 +920,7 @@
     const bounce = now < landBounceUntil ? 1 : 0;
     if (owned.handcart > 0) {
       P().draw(c, 'cart', sc.hx - 23, sc.floor - 16 + bounce, true);
+      twinkle(c, sc.hx - 24, sc.floor - 18, 20, 16, evo.handcart, now);
     } else if (!(owned.garbage_bags > 0)) {
       P().draw(c, 'bin', sc.hx - 18, sc.floor - 15 + bounce);
     }
@@ -979,6 +1009,16 @@
       next[u.id] = n;
       key += n > 0 ? u.id + ',' : '';
     }
+    // Evolved hero tools look different, so evolution tiers are part of the key.
+    const nextEvo = {};
+    const S = TrashGame.State;
+    if (S && S.evolutionTier) {
+      for (const id of ['broom', 'garbage_bags', 'handcart']) {
+        nextEvo[id] = next[id] > 0 ? S.evolutionTier(state, id) : 0;
+        if (nextEvo[id]) key += id + '*' + nextEvo[id] + ',';
+      }
+    }
+    evo = nextEvo;
     if (key !== ownedKey) {
       if (initialised && state === lastStateRef) {
         for (const id in next) {

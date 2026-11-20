@@ -23,7 +23,7 @@
 'use strict';
 const path = require('path');
 
-for (const f of ['upgrades.js', 'zones.js', 'state.js']) {
+for (const f of ['upgrades.js', 'zones.js', 'state.js', 'achievements.js']) {
   require(path.join(__dirname, '..', 'js', f));
 }
 const T = globalThis.TrashGame; // read T.UPGRADES / T.ZONES lazily so a tuner can swap them
@@ -46,7 +46,7 @@ function clone(s) {
   return { ...s, upgrades: { ...s.upgrades }, zonesUnlocked: { ...s.zonesUnlocked } };
 }
 
-function simulate({ tps = 4, minutes = 120, seed = 1, all = false } = {}) {
+function simulate({ tps = 4, minutes = 120, seed = 1, all = false, noAchievements = false } = {}) {
   const { State, CONFIG } = T;
   const rng = rngFrom(seed);
 
@@ -153,6 +153,7 @@ function simulate({ tps = 4, minutes = 120, seed = 1, all = false } = {}) {
     const before = s.money;
     State.tick(s, DT);
     earned.passive += s.money - before;
+    if (!noAchievements) State.checkAchievements(s, time * 1000);
     time += DT;
   }
   return { tps, minutes, state: s, log, firsts, earned, doneAt, endIncome: income(s) };
@@ -224,15 +225,15 @@ function report(r) {
 
 if (require.main === module) {
   // Accepts --tps=8 and --tps 8. Flags (--all, --json) take no value.
-  const FLAGS = new Set(['all', 'json']);
+  const FLAGS = new Set(['all', 'json', 'no-achievements']);
   const VALUES = new Set(['tps', 'minutes', 'seed']);
   const args = {};
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
-    const m = /^--([a-z]+)(?:=(.*))?$/.exec(argv[i]);
+    const m = /^--([a-z-]+)(?:=(.*))?$/.exec(argv[i]);
     const key = m && m[1];
     if (!m || !(FLAGS.has(key) || VALUES.has(key))) {
-      console.error(`Unknown argument "${argv[i]}". Use --tps N, --minutes N, --seed N, --all, --json.`);
+      console.error(`Unknown argument "${argv[i]}". Use --tps N, --minutes N, --seed N, --all, --json, --no-achievements.`);
       process.exit(2);
     }
     if (FLAGS.has(key)) args[key] = true;
@@ -250,6 +251,7 @@ if (require.main === module) {
     minutes: Number(args.minutes || 120),
     seed: Number(args.seed || 1),
     all: !!args.all,
+    noAchievements: !!args['no-achievements'],
   });
   if (args.json) {
     console.log(JSON.stringify(r.firsts.map((f) => ({ t: Math.round(f.t), taps: f.taps, kind: f.kind, id: f.id, cost: f.cost })), null, 2));

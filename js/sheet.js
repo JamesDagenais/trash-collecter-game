@@ -2,8 +2,10 @@
  * Pull-up sheet over the street: the shop ("Gear & Help") and the zones.
  *
  * INTERFACE (used by ui.js):
- *   TrashGame.Sheet.init({ sheet, head, toggle, scrim, tabs: { shop: btn, zones: btn },
- *                          panes: { shop: el, zones: el }, body })
+ *   TrashGame.Sheet.init({ sheet, head, toggle, scrim, tabs: { shop: btn, zones: btn, … },
+ *                          panes: { shop: el, zones: el, … }, body, fullOnly: ['awards'] })
+ *   Tabs listed in fullOnly have no collapsed shelf: picking one opens the sheet,
+ *   and closing the sheet goes back to the first tab.
  *   TrashGame.Sheet.open(tab?)  / close() / toggle() / isOpen() / select(tab)
  *
  * Collapsed, the sheet shows its head and one horizontal shelf of cards (quick
@@ -21,9 +23,14 @@
   let drag = null;
   let suppressClick = false;
 
+  function fullOnly(tab) {
+    return !!(el && el.fullOnly && el.fullOnly.indexOf(tab) !== -1);
+  }
+
   function setOpen(open) {
     if (!el) return;
     isOpenNow = !!open;
+    if (!isOpenNow && fullOnly(current)) select(Object.keys(el.tabs)[0]);
     el.sheet.classList.toggle('open', isOpenNow);
     document.documentElement.classList.toggle('sheet-open', isOpenNow);
     el.toggle.setAttribute('aria-expanded', String(isOpenNow));
@@ -43,6 +50,10 @@
       el.panes[name].hidden = !on;
     }
     if (el.body) el.body.scrollTop = 0;
+    if (fullOnly(tab) && !isOpenNow) {
+      setOpen(true);
+      return;
+    }
     root.dispatchEvent(new CustomEvent('trashgame:sheet', { detail: { open: isOpenNow, tab: current } }));
   }
 

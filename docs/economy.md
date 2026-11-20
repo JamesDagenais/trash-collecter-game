@@ -56,3 +56,23 @@ An independent review measured the economy against three player models: the gree
 - **Decided: no late tap tool.** The designer chose to keep the late game passive-led, as is usual for the genre: tapping matters early and Pfand-rich zones reward it mid-game.
 - **Pfand-rich zones are labelled.** A zone whose multiplier is below an earlier zone's but which has more Pfand (currently Mauerpark) shows "best while tapping" in the zones panel.
 - **Known limit:** prices are `ceil(baseCost × 1.15^n)` in floating point. Because 1.15 isn't exactly representable, prices past about €10 trillion (150+ copies) can be €1 off exact math. The shop shows and charges the same number, so nothing is inconsistent for the player.
+
+## Achievements (Phase 4)
+
+Rewards are kept small because a constant multiplier compounds over a slow late game. Even the flat +0.5% per achievement alone takes the greedy bot's full run from 40 to 32 minutes.
+
+| Greedy bot, 4 taps/s | Everything bought |
+| --- | --- |
+| No achievements (`--no-achievements`) | 40:08 |
+| First draft (+1% each, +10% Pfand rewards…) | 22:18 |
+| Shipped (+0.5% each, Pfand +5%, taps +3%, income +1%) | 29:12 |
+
+Real players take 1.4–3× as long as the bot, so a first run is still around 40+ minutes.
+
+**Evolutions are the long-term goals.** In a 2-hour run at 4 taps/s:
+- 11 of 18 evolutions unlock between 39 and 80 minutes.
+- The second tiers (Golden Broom at 150, Bottomless Bag at 125, Golden Push Cart at 100, Sweeper Mk II at 60) land just past 2 hours.
+- At that point every upgrade's next copy pays back in a similar 220–235 minutes, so brooms stay as worth buying as anything else.
+- 122 of 145 achievements are unlocked by 2 hours, leaving 23 for longer play.
+
+**Ranks vs the 1.15 cost curve.** Rank 1,000 isn't reachable: copy 1,000 of a €15 broom would cost about 10^61 €. Evolutions therefore sit at reachable ranks instead.

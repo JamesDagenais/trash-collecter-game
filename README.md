@@ -11,8 +11,8 @@ Each file has a single owner. Modules talk only through the interfaces written i
 | Workstream | Files | Interface it provides |
 | --- | --- | --- |
 | **Core** (integration) | `index.html`, `css/base.css`, `js/main.js`, `js/ui.js`, `js/format.js`, `README.md` | `UI`, `Format`, the wiring |
-| **Economy & content** | `js/upgrades.js`, `js/zones.js`, `js/state.js`, `js/save.js`, `tools/simulate.js`, `docs/economy.md` | `UPGRADES`, `ZONES`, `CONFIG`, `State`, `Save` |
-| **Shop UI** | `js/shop.js`, `css/shop.css` | `Shop.init/render`, inside `#shop` and `#zones` |
+| **Economy & content** | `js/upgrades.js`, `js/zones.js`, `js/achievements.js`, `js/state.js`, `js/save.js`, `tools/simulate.js`, `docs/economy.md` | `UPGRADES`, `ZONES`, `ACHIEVEMENTS`, `CONFIG`, `State`, `Save` |
+| **Shop UI** | `js/shop.js`, `js/awards.js`, `css/shop.css` | `Shop.init/render` inside `#shop` and `#zones`; `Awards.init/render` inside `#achievements` |
 | **Juice** | `js/effects.js`, `js/audio.js`, `css/effects.css` | `Effects.*`, `Sound.*` |
 | **Tests** | `tests/**` | `node tests/run.js`, `node tests/e2e.js` |
 
@@ -41,6 +41,17 @@ Scripts load with plain `<script>` tags in the order shown in `index.html` and s
 ## The zones contract
 
 `TrashGame.ZONES` in `js/zones.js`: `id`, `name`, `description`, `icon`, `unlockCost` (the first zone is 0), `trashMultiplier` (>= 1, applies to tap and per-second income) and `pfandChance` (0..1 per tap). Zones unlock in order and moving between unlocked zones is free. A Pfand bottle pays `State.pfandValue(state)` in bonus €: `PFAND_TAPS_WORTH` (8) taps plus `PFAND_SECONDS_WORTH` (2) seconds of passive income, so it stays relevant late game. Pfand-rich zones (Mauerpark, Warschauer Straße) trade a lower multiplier for more bottles, which rewards active tapping.
+
+## Achievements
+
+`TrashGame.ACHIEVEMENTS` in `js/achievements.js` has 145 achievements in eight categories: zones, gear, evolutions, trash, income, taps, Pfand and special (some special ones are secret). Most are **generated** from `UPGRADES` and `ZONES`, so new content gets achievements automatically:
+
+- **Gear ranks:** own 1 / 10 / 25 / 50 / 75 / 100 / 150 / 200 of each upgrade. A rank is left out when that copy would cost more than €10T, so nothing is unreachable.
+- **Evolutions:** listed by hand in `EVOLUTIONS`, because they have names. At the evolution rank the upgrade gets a new name (Old Broom → Kehrmeister Broom at 75 → Golden Broom at 150), a golden look in the shop and on the hero, and a `perOwned` bonus: every copy owned adds a % to tap or passive income. That keeps cheap early upgrades worth buying late.
+- **Rewards:** every achievement gives +`CONFIG.ACHIEVEMENT_BONUS` (0.5%) to all trash. Some also give an extra `global`, `tap`, `passive`, `pfand` or `perOwned` bonus. `State.bonuses(state)` returns the totals, and they are already part of `trashPerTap`, `trashPerSecond` and `pfandValue`.
+- **Unlocking:** `State.checkAchievements(state)` returns the newly unlocked ones. `main.js` calls it after every action and 4× a second. On load it runs quietly and shows one summary toast, so old saves earn what they already qualify for.
+- **Saving:** stored as `state.achievements: { [id]: unlockedAtMs }`. Unknown ids are dropped on load. Write to it only through `checkAchievements` / `unlockAchievement`, because the bonus cache relies on that.
+- **Menu:** the **Awards** tab of the pull-up sheet. It shows a summary of totals, category filters, and progress bars on locked achievements.
 
 ## Balancing
 

@@ -822,3 +822,209 @@
     transition: none !important;
   }
 }
+
+/* ---- Awards tab + menu --------------------------------------------------- */
+.sheet-tab-icon.trophy {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%231d1626' d='M1 0h6v1h1v2h-1v1h-1v1h-1v1h1v2h-4v-2h1v-1h-1v-1h-1v-1h-1v-2h1z'/%3E%3Cpath fill='%23e2ac45' d='M2 1h4v2h-1v1h-2v-1h-1z'/%3E%3Cpath fill='%23ffd86b' d='M2 1h1v2h-1z'/%3E%3Cpath fill='%23e2ac45' d='M3 7h2v-1h-2z'/%3E%3C/svg%3E");
+}
+.sheet-tab {
+  position: relative;
+}
+.tab-badge {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.56rem;
+  line-height: 12px;
+  text-align: center;
+}
+.tab-badge[hidden] {
+  display: none;
+}
+.awards {
+  padding-bottom: 8px;
+}
+.awards-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  margin: 2px 0 8px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--kraft);
+  color: var(--kraft-ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+.awards-trophy {
+  grid-row: 1 / 3;
+  width: 32px;
+  height: 32px;
+  background: center / contain no-repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%231d1626' d='M1 0h6v1h1v2h-1v1h-1v1h-1v1h1v2h-4v-2h1v-1h-1v-1h-1v-1h-1v-2h1z'/%3E%3Cpath fill='%23e2ac45' d='M2 1h4v2h-1v1h-2v-1h-1z'/%3E%3Cpath fill='%23ffd86b' d='M2 1h1v2h-1z'/%3E%3Cpath fill='%23e2ac45' d='M3 7h2v-1h-2z'/%3E%3C/svg%3E");
+  image-rendering: pixelated;
+}
+.awards-count {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.awards-bonus {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #6a5444;
+}
+.awards-filters {
+  display: flex;
+  gap: 6px;
+  margin: 0 -10px 8px;
+  padding: 2px 10px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.awards-filters::-webkit-scrollbar {
+  display: none;
+}
+.awards-filter {
+  flex: none;
+  height: 28px;
+  padding: 0 9px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: #5c4447;
+  color: #e6d6bd;
+  box-shadow: 0 2px 0 var(--ink);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.awards-filter[aria-pressed='true'] {
+  background: var(--mustard);
+  color: var(--ink);
+}
+.awards-filter:focus-visible {
+  outline: 2px solid var(--mustard);
+  outline-offset: 2px;
+}
+.awards-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.award {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 7px 10px 9px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: #4a3a3f;
+  color: #cbbba6;
+  box-shadow: 0 2px 0 var(--ink);
+  overflow: hidden;
+}
+.award[hidden] {
+  display: none;
+}
+.award.unlocked {
+  background: var(--kraft);
+  color: var(--kraft-ink);
+}
+.award.unlocked.evolution {
+  background: linear-gradient(180deg, #f8e6ad, var(--kraft));
+  box-shadow: 0 2px 0 var(--ink), inset 0 0 0 2px rgba(226, 172, 69, 0.7);
+}
+.award-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: #2e2238 center / 28px 28px no-repeat;
+  image-rendering: pixelated;
+  font-size: 1.4rem;
+  line-height: 32px;
+  text-align: center;
+  color: #8d8799;
+}
+.award.locked .award-icon {
+  filter: grayscale(1) brightness(0.7);
+}
+.award.unlocked .award-icon {
+  background-color: #f3e7cf;
+}
+.award-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.award-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.award-desc {
+  font-size: 0.68rem;
+}
+.award-reward {
+  margin-top: 1px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--mustard);
+}
+.award.unlocked .award-reward {
+  color: var(--accent-dark);
+}
+.award.locked .award-reward {
+  opacity: 0.8;
+}
+.award-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.award-fill {
+  display: block;
+  height: 100%;
+  background: var(--mustard);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.award.unlocked .award-bar {
+  display: none;
+}
+@media (min-width: 420px) {
+  .awards-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+/* Evolved upgrades in the shop get a golden edge and a star on the count badge. */
+.upgrade.evolved-1 .upgrade-icon,
+.upgrade.evolved-2 .upgrade-icon {
+  box-shadow: 0 0 0 2px var(--mustard);
+}
+.upgrade.evolved-2 .upgrade-icon {
+  box-shadow: 0 0 0 2px var(--mustard), 0 0 10px rgba(255, 216, 107, 0.8);
+}
+.upgrade-fx-evo {
+  color: var(--accent-dark);
+}

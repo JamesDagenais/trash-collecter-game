@@ -135,6 +135,19 @@ async function main() {
       if (!(m1 < m0)) throw new Error(`money did not go down (${m0} -> ${m1})`);
     });
 
+    await step('buying it unlocks an achievement, listed under Awards', async () => {
+      const id = `own_${first.id}_1`;
+      await waitFor((aid) => TrashGame.State.isAchievementUnlocked(TrashGame.debug.state, aid), id, `achievement ${id}`);
+      await page.locator('#tabAwards').click();
+      await waitFor((aid) => {
+        const card = document.querySelector(`#achievements [data-achievement="${aid}"]`);
+        return !!card && card.classList.contains('unlocked') && !card.closest('[hidden]');
+      }, id, `${id} shown as unlocked`);
+      const count = await page.locator('#achievements .awards-count').textContent();
+      if (!/^\s*[1-9]/.test(count)) throw new Error(`awards count should be >= 1, got "${count}"`);
+      await page.keyboard.press('Escape');
+    });
+
     await step('progress survives a reload', async () => {
       const m0 = await read('#money');
       await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
